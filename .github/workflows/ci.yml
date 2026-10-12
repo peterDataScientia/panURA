@@ -23,8 +23,8 @@ jobs:
           python -m pip install pytest pytest-playwright
       - name: Check Python syntax
         run: python -m compileall -q app.py panura_engine.py panura_navigation.py tests
-      - name: Test QSAR inference contract
-        run: python -m pytest -q tests/test_engine.py
+      - name: Test QSAR inference and molecular ID preservation
+        run: python -m pytest -q tests/test_engine.py tests/test_inputs.py
       - name: Install Chromium
         run: python -m playwright install --with-deps chromium
       - name: Browser responsive navigation tests
