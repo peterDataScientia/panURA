@@ -10,6 +10,7 @@ import streamlit as st
 from rdkit.Chem import Descriptors
 
 from panura_engine import load_assets, parse_smiles, predict_smiles
+from panura_inputs import read_screening_file
 from panura_navigation import available_editor_width, render_navigation
 
 ROOT = Path(__file__).resolve().parent
@@ -161,15 +162,33 @@ if page == "Molecular Prediction":
                     st.caption("2D structure preview unavailable.")
 
 elif page == "Batch Screening":
-    uploaded = st.file_uploader("CSV or Excel file containing SMILES", type=["csv", "xlsx"])
+    # Tiny sample files show both accepted formats without occupying vertical space.
+    sample_csv, sample_txt = st.columns(2, gap="small")
+    with sample_csv:
+        st.download_button(
+            "Download example .CSV",
+            data=(ROOT / "examples" / "PanURA_example.csv").read_bytes(),
+            file_name="PanURA_example.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+    with sample_txt:
+        st.download_button(
+            "Download example .TXT",
+            data=(ROOT / "examples" / "PanURA_example.txt").read_bytes(),
+            file_name="PanURA_example.txt",
+            mime="text/plain",
+            use_container_width=True,
+        )
+    uploaded = st.file_uploader(
+        "Upload CSV, TXT or Excel file containing SMILES",
+        type=["csv", "txt", "xlsx"],
+        help="TXT: one SMILES per line. CSV/XLSX: a table with a SMILES column.",
+    )
     if uploaded is not None:
         try:
             source_id = hashlib.sha256(uploaded.getvalue()).hexdigest()
-            df = (
-                pd.read_csv(uploaded)
-                if uploaded.name.lower().endswith(".csv")
-                else pd.read_excel(uploaded)
-            )
+            df = read_screening_file(uploaded.name, uploaded.getvalue())
             if df.empty or not len(df.columns):
                 st.info("The uploaded dataset is empty.")
             else:
