@@ -132,3 +132,57 @@ html,body,.stApp{max-width:100%;overflow-x:hidden}
  .stApp .panel-tag{display:none}
  .stApp .workspace-label{font-size:1.15rem}
 }
+
+/* Fixed top-right hamburger on mobile, tablet, desktop and desktop-site emulation */
+.st-key-panura_top_nav{
+ position:relative!important;
+ min-height:76px;
+ isolation:isolate;
+ margin-bottom:10px;
+}
+.st-key-panura_top_nav .st-key-panura_menu_toggle{
+ position:absolute!important;
+ top:8px!important;
+ right:0!important;
+ width:110px!important;
+ z-index:1001!important;
+ margin:0!important;
+}
+.st-key-panura_top_nav .st-key-panura_menu_toggle button{
+ width:100%!important;
+ min-height:44px!important;
+ padding:8px 12px!important;
+ white-space:nowrap!important;
+ border-radius:11px!important;
+ background:linear-gradient(110deg,#143b6d,#087e82)!important;
+ color:#fff!important;
+ border:1px solid #0e8587!important;
+}
+.st-key-panura_top_nav .st-key-panura_menu_panel{
+ position:absolute!important;
+ top:60px!important;
+ right:0!important;
+ width:min(290px,calc(100vw - 24px))!important;
+ max-width:calc(100% - 12px)!important;
+ z-index:1000!important;
+ padding:10px!important;
+ background:#fff!important;
+ border:1px solid #d9e5f1!important;
+ border-radius:15px!important;
+ box-shadow:0 18px 38px #102c4e35!important;
+}
+.st-key-panura_top_nav .st-key-panura_menu_panel button{
+ width:100%!important;
+ min-height:46px!important;
+ margin:2px 0!important;
+ text-align:left!important;
+ border-radius:9px!important;
+ white-space:normal!important;
+}
+@media(max-width:700px){
+ .st-key-panura_top_nav{min-height:63px!important}
+ .st-key-panura_top_nav .st-key-panura_menu_toggle{top:4px!important;right:0!important;width:94px!important}
+ .st-key-panura_top_nav .st-key-panura_menu_toggle button{font-size:.8rem!important;padding:7px!important}
+ .st-key-panura_top_nav [data-testid="stImage"] img{max-width:min(205px,calc(100vw - 125px))!important;max-height:58px!important;object-fit:contain}
+ .st-key-panura_top_nav .st-key-panura_menu_panel{top:53px!important}
+}
