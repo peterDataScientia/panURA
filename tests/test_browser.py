@@ -219,3 +219,21 @@ def test_batch_csv_ids_remain_in_prediction_export(page, app_url):
     assert list(records[0])[:2] == ["ID", "SMILES"]
     assert [r["ID"] for r in records] == [f"URA_{i:03d}" for i in range(1, 7)]
     assert all(r["pIC50_pred"] for r in records)
+    assert "max_tanimoto" not in records[0], "Do not export an empty similarity column"
+
+
+def test_small_batch_shows_molecule_chart_not_fixed_25_bin_histogram(page, app_url):
+    """Individual molecular IDs must be interpretable for small screenings."""
+    page.goto(app_url + "?view=batch")
+    page.locator('input[type="file"]').set_input_files(str(ROOT / "examples" / "PanURA_example.csv"))
+    page.get_by_role("button", name="Run Screening").click()
+    chart = page.locator('[data-testid="stPlotlyChart"]')
+    expect(chart).to_be_visible(timeout=30000)
+    # The Plotly figure is rendered by Streamlit, and must use one scatter
+    # trace with every compound in the six-row example.
+    figure = chart.locator(".js-plotly-plot").first
+    expect(figure).to_be_visible(timeout=15000)
+    trace_info = figure.evaluate(
+        "(el) => el.data.map(t => ({type: t.type, count: t.x.length}))"
+    )
+    assert trace_info == [{"type": "scatter", "count": 6}], trace_info
