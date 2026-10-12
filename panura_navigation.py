@@ -73,7 +73,12 @@ export default function({parentElement, data}) {
         };
     }
     const outside = (event) => {
-        if (!menu.hidden && !root.contains(event.target)) close();
+        // DOM event targets are retargeted to the shadow host when they
+        // bubble out of Components v2. composedPath retains the true path.
+        const path = event.composedPath ? event.composedPath() : [];
+        if (!menu.hidden && !path.includes(root) && !root.contains(event.target)) {
+            close();
+        }
     };
     const keyboard = (event) => {
         if (menu.hidden) return;
