@@ -49,3 +49,35 @@ header[data-testid="stHeader"]{background:transparent}
 }
 @media(max-width:360px){.panura-section .tag{display:none}}
 @media(prefers-reduced-motion:reduce){.stApp div[data-testid="stMetric"]{animation:none;transition:none}}
+
+/* Keep the entire JSME drawing surface inside the available phone/tablet width.
+   Use native wrapping for the main layout (do not resize Streamlit columns in JS). */
+.st-key-panura_editor_column{width:100%;max-width:100%;min-width:0}
+.st-key-panura_editor_column iframe{
+ display:block;
+ width:100%;
+ max-width:100%;
+ border:0;
+ border-radius:12px;
+ background:#fff;
+}
+@media(max-width:1050px){
+ [data-testid="stHorizontalBlock"]:has(.st-key-panura_editor_column){
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+ }
+ [data-testid="stHorizontalBlock"]:has(.st-key-panura_editor_column) > [data-testid="stColumn"]{
+  flex:0 0 auto;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+ }
+}
+@media(max-width:640px){
+ .st-key-panura_editor_column iframe{border-radius:8px}
+ .stApp .block-container{
+  padding-left:max(10px,env(safe-area-inset-left));
+  padding-right:max(10px,env(safe-area-inset-right));
+ }
+}
