@@ -71,17 +71,31 @@ def predict(smiles, assets):
         similarity = max(DataStructs.BulkTanimotoSimilarity(query, refs)) if refs else None
     return value, similarity
 
+if "panura_current_page" not in st.session_state:
+    st.session_state.panura_current_page = "Molecular Prediction"
+if "panura_menu_open" not in st.session_state:
+    st.session_state.panura_menu_open = False
+
 st.markdown('<div class="top-accent"></div>', unsafe_allow_html=True)
-nav_logo, nav_menu = st.columns([9, 1], gap="small", vertical_alignment="center")
+nav_logo, nav_menu = st.columns([8, 2], gap="small", vertical_alignment="center")
 with nav_logo:
     st.image(str(ROOT / "assets" / "panura-logo.svg"), width=260)
 with nav_menu:
-    with st.popover("☰ Menu", use_container_width=True):
-        page = st.radio(
-            "Navigate to",
-            ["Molecular Prediction", "Batch Screening", "Model & Methods"],
-            key="panura_current_page",
-        )
+    if st.button("☰ Menu", key="panura_menu_toggle", use_container_width=True):
+        st.session_state.panura_menu_open = not st.session_state.panura_menu_open
+        st.rerun()
+
+if st.session_state.panura_menu_open:
+    nav_spacer, nav_options = st.columns([7, 3], gap="small")
+    with nav_options:
+        with st.container(border=True):
+            for option in ("Molecular Prediction", "Batch Screening", "Model & Methods"):
+                if st.button(option, key=f"panura_nav_{option}", use_container_width=True):
+                    st.session_state.panura_current_page = option
+                    st.session_state.panura_menu_open = False
+                    st.rerun()
+
+page = st.session_state.panura_current_page
 
 assets, model_error = load_predictor()
 if model_error:
