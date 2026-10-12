@@ -77,25 +77,21 @@ if "panura_menu_open" not in st.session_state:
     st.session_state.panura_menu_open = False
 
 st.markdown('<div class="top-accent"></div>', unsafe_allow_html=True)
+# A single anchored header: CSS positions the button at the top-right
+# regardless of whether the mobile browser requests desktop site.
 with st.container(key="panura_top_nav"):
-    nav_logo, nav_menu = st.columns([8, 2], gap="small", vertical_alignment="center")
-    with nav_logo:
-        st.image(str(ROOT / "assets" / "panura-logo.svg"), width=240)
-    with nav_menu:
-        if st.button("☰ Menu", key="panura_menu_toggle", use_container_width=True):
-            st.session_state.panura_menu_open = not st.session_state.panura_menu_open
-            st.rerun()
+    st.image(str(ROOT / "assets" / "panura-logo.svg"), width=240)
+    if st.button("☰ Menu", key="panura_menu_toggle"):
+        st.session_state.panura_menu_open = not st.session_state.panura_menu_open
+        st.rerun()
 
-if st.session_state.panura_menu_open:
-    with st.container(key="panura_menu_panel"):
-        nav_spacer, nav_options = st.columns([7, 3], gap="small")
-        with nav_options:
-            with st.container(border=True):
-                for option in ("Molecular Prediction", "Batch Screening", "Model & Methods"):
-                    if st.button(option, key=f"panura_nav_{option}", use_container_width=True):
-                        st.session_state.panura_current_page = option
-                        st.session_state.panura_menu_open = False
-                        st.rerun()
+    if st.session_state.panura_menu_open:
+        with st.container(key="panura_menu_panel"):
+            for option in ("Molecular Prediction", "Batch Screening", "Model & Methods"):
+                if st.button(option, key=f"panura_nav_{option}", use_container_width=True):
+                    st.session_state.panura_current_page = option
+                    st.session_state.panura_menu_open = False
+                    st.rerun()
 
 page = st.session_state.panura_current_page
 
