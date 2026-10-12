@@ -81,3 +81,47 @@ header[data-testid="stHeader"]{background:transparent}
   padding-right:max(10px,env(safe-area-inset-right));
  }
 }
+
+/* Mobile-first reflow: never miniaturize desktop dashboard into tiny columns. */
+@media(max-width:720px){
+ .stApp .block-container{padding-inline:12px;padding-bottom:38px}
+ .stApp [data-testid="stHorizontalBlock"]:has(.st-key-panura_editor_column){
+  display:flex;flex-direction:column;align-items:stretch;gap:20px
+ }
+ .stApp [data-testid="stHorizontalBlock"]:has(.st-key-panura_editor_column)>[data-testid="stColumn"]{
+  flex:0 0 100%;width:100%;max-width:100%;min-width:0
+ }
+ .st-key-panura_editor_column,.st-key-panura_editor_column [data-testid="stElementContainer"]{
+  width:100%;min-width:0;max-width:100%
+ }
+ .st-key-panura_editor_column [data-testid="stCustomComponentV1"]{
+  width:100%;max-width:100%;min-width:0
+ }
+ .st-key-panura_editor_column iframe{display:block;width:100%;max-width:100%;overflow:hidden}
+ .st-key-panura_prediction_metrics [data-testid="stHorizontalBlock"],
+ .st-key-panura_descriptor_metrics [data-testid="stHorizontalBlock"]{
+  display:flex;flex-direction:column;gap:10px;align-items:stretch
+ }
+ .st-key-panura_prediction_metrics [data-testid="stHorizontalBlock"]>[data-testid="stColumn"],
+ .st-key-panura_descriptor_metrics [data-testid="stHorizontalBlock"]>[data-testid="stColumn"]{
+  flex:0 0 auto;width:100%;max-width:100%;min-width:0
+ }
+ .st-key-panura_prediction_metrics [data-testid="stMetric"],
+ .st-key-panura_descriptor_metrics [data-testid="stMetric"]{
+  min-height:74px;
+  padding:12px 15px
+ }
+ .st-key-panura_editor_column [data-testid="stSegmentedControl"] [role="radiogroup"]{
+  display:flex;flex-wrap:wrap;gap:8px;max-width:100%
+ }
+ .st-key-panura_editor_column [data-testid="stSegmentedControl"] [role="radio"]{
+  flex:1 1 auto;min-height:42px
+ }
+ .panura-intro{margin-bottom:13px}
+ .st-key-panura_structure_details{margin-top:8px}
+}
+@media(max-width:380px){
+ .panura-intro p{font-size:.78rem;line-height:1.45}
+ .stApp .block-container{padding-inline:10px}
+ .panura-section .tag{display:none}
+}
