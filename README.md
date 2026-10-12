@@ -16,10 +16,12 @@ streamlit run app.py
 - `app.py` — Streamlit pages, automatic prediction workflow and batch screening.
 - `panura_inputs.py` — CSV, TXT and XLSX upload parsing.
 - `panura_engine.py` — independent RDKit/PubChem fingerprint preprocessing and QSAR inference.
+- `panura_visuals.py` — ID-labelled interactive activity profiles and adaptive distribution plots.
 - `panura_navigation.py` — accessible top-right hamburger menu using Streamlit Components v2 and editor width measurement.
 - `styles.css` — responsive design and motion, with reduced-motion support.
 - `tests/test_engine.py` — preprocessing/inference contract tests.
 - `tests/test_inputs.py` — sample-file integrity and CSV/TXT parsing tests.
+- `tests/test_visuals.py` — molecule-level plot and histogram integrity checks.
 - `tests/test_browser.py` — Playwright navigation checks at phone, tablet and desktop viewport sizes.
 - `.github/workflows/ci.yml` — automatic Python and browser tests.
 
@@ -27,7 +29,7 @@ streamlit run app.py
 
 The app loads **only** `models/Final_Model.pkl.b64` (base64 encoding of the original `Final_Model.pkl`) and `models/Feature_Selection_Manifest.json.b64`. The manifest contains 142 selected `PubChem_<index>` descriptors; the original 881-bit fingerprints and feature ordering are retained. The app **does not use** `Auto_Model_Optimized_Pipeline.pkl` and does not refit the model.
 
-Optional `models/train_fingerprints.npy` must contain 881-bit rows for the training compounds. If present, the app reports maximum Tanimoto similarity; this is not a formal applicability-domain determination.
+Optional `models/train_fingerprints.npy` must contain 881-bit rows for the **original training compounds**. This file is currently not present in the repository, so maximum Tanimoto similarity cannot be computed. The app omits the column instead of exporting empty values. If genuine matching training fingerprints are provided, maximum Tanimoto similarity is calculated using the 881-bit representation; it is not a formal applicability-domain determination.
 
 Reported research metrics: 351 compounds; 280/71 Kennard–Stone training/test partition; test R² ≈ 0.782 and RMSE ≈ 0.493 pIC₅₀ units. These research metrics are not a claim of a newly validated web deployment.
 
@@ -35,7 +37,7 @@ Reported research metrics: 351 compounds; 280/71 Kennard–Stone training/test p
 
 **Molecular Prediction:** Choose Draw molecule (StreamJSME) or Enter SMILES. JSME emits SMILES on its drawing-change callback; Python computes predictions on valid structures without an Apply/Predict button. The component measures editor space to choose a width that fits mobile and desktop. pIC₅₀ and estimated IC₅₀ (µM) update automatically when the input changes.
 
-**Batch Screening:** Download a ready-to-use example from `examples/PanURA_example.csv` or `examples/PanURA_example.txt`, or upload your own CSV, TXT or XLSX file. Example CSV/TXT files contain **ID** and **SMILES** columns. In TXT, these columns are tab-separated; a one-SMILES-per-line TXT file is also supported and receives generated IDs. CSV/XLSX files require a SMILES column; optional user-supplied IDs or Identifiers are preserved verbatim (including leading zeroes). If no identifier is provided, PanURA generates stable `Compound_0001`-style IDs. The identifier remains associated with each molecule through the preview, screening results and downloaded prediction CSV. Example molecules are for input-format demonstration, not measured inhibition data.
+**Batch Screening:** Download a ready-to-use example from `examples/PanURA_example.csv` or `examples/PanURA_example.txt`, or upload your own CSV, TXT or XLSX file. Example CSV/TXT files contain **ID** and **SMILES** columns. In TXT, these columns are tab-separated; a one-SMILES-per-line TXT file is also supported and receives generated IDs. CSV/XLSX files require a SMILES column; optional user-supplied IDs or Identifiers are preserved verbatim (including leading zeroes). If no identifier is provided, PanURA generates stable `Compound_0001`-style IDs. The identifier remains associated with each molecule through the preview, screening results and downloaded prediction CSV. For up to 40 valid predictions, a ranked molecular dot plot shows every compound ID and its pIC₅₀ with SMILES and IC₅₀ on hover. For larger datasets, an adaptive frequency distribution becomes the main visualization; the per-molecule chart remains available in an expander. Example molecules are for input-format demonstration, not measured inhibition data.
 
 **Model & Methods:** Summary of descriptors, model and reported external evaluation.
 
