@@ -135,11 +135,12 @@ if page == "Molecular Prediction":
         elif assets is not None:
             try:
                 result = cached_prediction(smiles)
-                c1, c2 = st.columns(2, gap="small")
-                c1.metric("Predicted pIC₅₀", f'{result["pic50"]:.3f}')
-                c2.metric("Estimated IC₅₀", f'{result["ic50_um"]:.3g} µM')
-                if result["max_tanimoto"] is not None:
-                    st.metric("Max. training-set Tanimoto", f'{result["max_tanimoto"]:.3f}')
+                with st.container(key="panura_prediction_metrics"):
+                    c1, c2 = st.columns(2, gap="small")
+                    c1.metric("Predicted pIC₅₀", f'{result["pic50"]:.3f}')
+                    c2.metric("Estimated IC₅₀", f'{result["ic50_um"]:.3g} µM')
+                    if result["max_tanimoto"] is not None:
+                        st.metric("Max. training-set Tanimoto", f'{result["max_tanimoto"]:.3f}')
             except Exception as exc:
                 st.error(f"Prediction error: {exc}")
 
