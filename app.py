@@ -118,16 +118,17 @@ if page == "Molecular Prediction":
     with right:
         st.markdown('<div class="panel-heading">Prediction console</div>', unsafe_allow_html=True)
         st.caption("Draw or enter a molecule to predict urease inhibitory activity.")
-        if st.button("Predict activity", type="primary", disabled=assets is None or mol is None, use_container_width=True):
+        if assets is not None and mol is not None:
             try:
                 value, similarity = predict(smiles, assets)
                 st.metric("Predicted pIC₅₀", f"{value:.3f}")
                 st.metric("Estimated IC₅₀", f"{10 ** (6-value):.3g} µM")
                 if similarity is not None:
                     st.metric("Maximum training-set Tanimoto", f"{similarity:.3f}")
-
             except Exception as exc:
                 st.error(f"Prediction failed: {exc}")
+        elif not smiles:
+            st.caption("Prediction updates automatically when a valid molecule is entered or drawn.")
 
 
 elif page == "Batch Screening":
