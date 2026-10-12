@@ -71,7 +71,7 @@ def test_hamburger_anchored_right_and_closes_after_navigation(page, app_url, wid
     option = page.get_by_role("link", name="Batch Screening")
     expect(option).to_be_visible()
     option.click()
-    expect(page.get_by_text("CSV or Excel file containing SMILES", exact=True)).to_be_visible(timeout=12000)
+    expect(page.get_by_text("Upload CSV, TXT or Excel file containing SMILES", exact=True)).to_be_visible(timeout=12000)
     expect(page.get_by_role("link", name="Batch Screening")).to_have_count(0)
     expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
 
@@ -151,7 +151,7 @@ def test_mobile_view_not_cramped(page, app_url, width, height):
 
 def test_direct_batch_route(page, app_url):
     page.goto(app_url + "?view=batch")
-    expect(page.get_by_text("CSV or Excel file containing SMILES", exact=True)).to_be_visible(timeout=30000)
+    expect(page.get_by_text("Upload CSV, TXT or Excel file containing SMILES", exact=True)).to_be_visible(timeout=30000)
 
 
 def test_menu_switches_repeatedly_without_page_reload(page, app_url):
@@ -161,10 +161,10 @@ def test_menu_switches_repeatedly_without_page_reload(page, app_url):
     expect(page.get_by_text("Molecular editor", exact=True)).to_be_visible(timeout=30000)
 
     for destination, expected in [
-        ("Batch Screening", "CSV or Excel file containing SMILES"),
+        ("Batch Screening", "Upload CSV, TXT or Excel file containing SMILES"),
         ("Model & Methods", "Model & Methods"),
         ("Molecular Prediction", "Molecular editor"),
-        ("Batch Screening", "CSV or Excel file containing SMILES"),
+        ("Batch Screening", "Upload CSV, TXT or Excel file containing SMILES"),
     ]:
         page.get_by_role("button", name="Open navigation menu").click()
         link = page.get_by_role("link", name=destination, exact=True)
@@ -174,3 +174,24 @@ def test_menu_switches_repeatedly_without_page_reload(page, app_url):
         expect(page.get_by_role("link", name=destination, exact=True)).to_have_count(0)
         expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
 
+
+
+@pytest.mark.parametrize("extension", ["CSV", "TXT"])
+def test_example_files_download_from_batch_page(page, app_url, extension):
+    """Samples are available without preparing a dataset externally."""
+    page.goto(app_url + "?view=batch")
+    label = f"Download example .{extension}"
+    button = page.get_by_role("button", name=label)
+    expect(button).to_be_visible(timeout=30000)
+    with page.expect_download() as event:
+        button.click()
+    assert event.value.suggested_filename == f"PanURA_example.{extension.lower()}"
+
+
+def test_upload_example_txt_shows_smiles_column(page, app_url):
+    page.goto(app_url + "?view=batch")
+    uploader = page.locator('input[type="file"]')
+    expect(page.get_by_text("Upload CSV, TXT or Excel file containing SMILES")).to_be_visible(timeout=30000)
+    uploader.set_input_files(str(ROOT / "examples" / "PanURA_example.txt"))
+    expect(page.get_by_text("SMILES column")).to_be_visible(timeout=15000)
+    expect(page.get_by_role("button", name="Run Screening")).to_be_visible()
