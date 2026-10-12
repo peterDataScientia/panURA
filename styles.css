@@ -36,3 +36,31 @@ header[data-testid="stHeader"]{background:transparent}
 [data-testid="stProgressBar"]>div{border-radius:8px;overflow:hidden}
 [data-testid="stProgressBar"]>div>div{background:linear-gradient(90deg,#1769ad,#08a89b,#6fd5d0);background-size:200% 100%;animation:panuraBorderFlow 3s linear infinite}
 @media(prefers-reduced-motion:reduce){[data-testid="stMetric"],[data-testid="stSidebar"],[data-testid="stProgressBar"]>div>div{animation:none!important}.stButton>button,.stDownloadButton>button{transition:none!important}}
+
+/* PanURA scientific workspace refinement */
+.stApp{background:radial-gradient(circle at 90% 3%,#dceff2 0,transparent 28%),linear-gradient(145deg,#f8fbff,#edf3fa 80%)}
+.block-container{max-width:1440px;padding-top:.75rem;padding-left:2.4rem;padding-right:2.4rem;padding-bottom:3.5rem}
+.top-accent{height:4px;border-radius:12px;background:linear-gradient(90deg,#163c78,#10a99b,#81dfe0);margin-bottom:15px;box-shadow:0 3px 14px #16a49b28}
+[data-testid="stSidebar"]{border-right:1px solid #ffffff22}
+.workspace-intro{background:linear-gradient(115deg,#132f60,#1e5183 62%,#127d82);padding:25px 29px;border-radius:18px;color:white;margin:14px 0 22px;box-shadow:0 16px 40px #16396428;position:relative;overflow:hidden}
+.workspace-intro::after{content:"";position:absolute;right:-38px;top:-70px;width:240px;height:240px;border:1px solid #b8f8eb33;border-radius:50%;box-shadow:0 0 0 36px #d3fff808,0 0 0 80px #d3fff806}
+.workspace-kicker{font-size:.69rem;letter-spacing:.17em;font-weight:800;color:#89eadb}
+.workspace-label{font-size:1.63rem;font-weight:800;letter-spacing:-.035em;margin:6px 0}
+.workspace-sub{font-size:.87rem;color:#dceaf5;max-width:560px}
+.panel-heading{background:#fff;border:1px solid #dae5f1;border-radius:12px;padding:13px 16px;margin:0 0 13px;font-size:1rem;font-weight:800;display:flex;align-items:center;gap:9px;box-shadow:0 3px 15px #1c31520b}
+.panel-index{display:inline-flex;align-items:center;justify-content:center;background:#e5f5f6;color:#0e777d;border-radius:7px;width:28px;height:28px;font-size:.75rem}
+.panel-tag{margin-left:auto;background:#eaf7f2;border:1px solid #b7e5d9;color:#0a786d;font-size:.61rem;letter-spacing:.09em;padding:5px 8px;border-radius:99px;white-space:nowrap}
+.console-lead{font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;color:#57708e;margin:9px 0 18px;font-weight:700}
+.empty-console{min-height:285px;border:1px dashed #a5c4d5;border-radius:15px;background:linear-gradient(150deg,#ffffffd9,#eff8fc);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 22px;animation:panuraReveal .38s ease-out both}
+.empty-symbol{font-size:3.6rem;line-height:1;color:#1a8b91;margin-bottom:17px}
+.empty-console strong{font-size:1.14rem;color:#193860}
+.empty-console p{font-size:.85rem;color:#667b95;max-width:300px;line-height:1.6;margin:10px auto 19px}
+.live-indicator{font-size:.73rem;font-weight:700;color:#15877e;letter-spacing:.03em}
+[data-testid="stTextInput"] input{border:1px solid #c8d9e9;border-radius:10px;min-height:47px;background:white;font-size:.9rem}
+[data-testid="stTextInput"] input:focus{border-color:#0f9f9a;box-shadow:0 0 0 3px #11a89f1d}
+[data-testid="stMetric"]{min-height:100px;box-shadow:0 8px 25px #1a3d6412;border-radius:13px}
+[data-testid="stMetricLabel"]{font-weight:700;color:#62758e}
+[data-testid="stMetricValue"]{font-size:1.65rem;font-weight:800}
+[data-testid="stFileUploader"]{border:1px solid #d6e5ee;box-shadow:0 8px 26px #1834500c;padding:18px;border-radius:14px}
+[data-testid="stDataFrame"]{border-radius:12px;overflow:hidden}
+@media(max-width:800px){.block-container{padding:1rem}.workspace-intro{padding:19px}.workspace-label{font-size:1.32rem}.panel-tag{font-size:.53rem}.panel-heading{font-size:.88rem}}
