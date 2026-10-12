@@ -39,7 +39,7 @@ button:focus-visible{outline:3px solid #34c8ba;outline-offset:3px}
 @media(prefers-reduced-motion:no-preference){.panura-menu{animation:panura-open .16s ease-out}@keyframes panura-open{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}}
 """
 NAV_JS = """
-export default function({parentElement, data, setTriggerValue}) {
+export default function({parentElement, data, setStateValue}) {
     const root = parentElement.querySelector(".panura-shell");
     const logo = root.querySelector(".panura-logo");
     const toggle = root.querySelector(".panura-toggle");
@@ -64,7 +64,7 @@ export default function({parentElement, data, setTriggerValue}) {
         else link.removeAttribute("aria-current");
         link.onclick = () => {
             close();
-            setTriggerValue("navigate", selected);
+            setStateValue("page", selected);
         };
     }
     const outside = (event) => {
@@ -94,17 +94,28 @@ export default function({parentElement, data, setTriggerValue}) {
 """
 WIDTH_JS = """
 export default function({parentElement, data, setStateValue}) {
-    const el = parentElement.host?.parentElement ?? parentElement;
+    const shadowRoot = parentElement.getRootNode();
+    const host = shadowRoot.host ?? parentElement;
+    const column = host.closest?.('[data-testid="stColumn"]');
     const read = () => {
-        const measured = Math.round(el.getBoundingClientRect().width);
-        if (measured > 0 && Math.abs(measured - (Number(data.known) || 0)) >= 18) {
+        const columnWidth = column?.getBoundingClientRect().width
+            || host.getBoundingClientRect().width
+            || parentElement.getBoundingClientRect().width;
+        const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+        const measured = Math.floor(Math.min(columnWidth - 8, viewportWidth - 26));
+        if (Number.isFinite(measured) && measured > 160 &&
+            Math.abs(measured - (Number(data.known) || 0)) >= 8) {
             setStateValue("available", measured);
         }
     };
     const observer = new ResizeObserver(read);
-    observer.observe(el);
+    observer.observe(column || host);
+    window.addEventListener("resize", read, {passive:true});
     read();
-    return () => observer.disconnect();
+    return () => {
+        observer.disconnect();
+        window.removeEventListener("resize", read);
+    };
 }
 """
 # Register only once per app process, not once per individual widget rerun.
@@ -117,18 +128,26 @@ width_component = st.components.v2.component(
 )
 
 
+def _sync_selected_page() -> None:
+    """Persist the choice during the component callback, before a new rerun."""
+    state = st.session_state.get("panura_header", {})
+    selected = state.get("page") if isinstance(state, dict) else getattr(state, "page", None)
+    if selected in PAGES:
+        st.session_state.panura_page = selected
+
+
 def render_navigation(logo_path: Path) -> str:
     st.session_state.setdefault("panura_page", PAGES[0])
     logo_data = base64.b64encode(Path(logo_path).read_bytes()).decode("ascii")
     result = navigation_component(
         data={"logo": "data:image/svg+xml;base64," + logo_data,
               "page": st.session_state.panura_page},
+        default={"page": st.session_state.panura_page},
         key="panura_header", width="stretch", height="content",
-        on_navigate_change=lambda: None,
+        on_page_change=_sync_selected_page,
     )
-    selected = result.navigate
-    if selected in PAGES:
-        st.session_state.panura_page = selected
+    if result.page in PAGES:
+        st.session_state.panura_page = result.page
     return st.session_state.panura_page
 
 
@@ -141,4 +160,4 @@ def available_editor_width() -> int:
         on_available_change=lambda: None,
     )
     measured = result.available if isinstance(result.available, (int, float)) else 330
-    return max(240, min(520, int(measured) - 12))
+    return max(180, min(700, int(measured)))
