@@ -103,7 +103,7 @@ if page == "Molecular Prediction":
                     from StreamJSME import StreamJSME
                     width = available_editor_width()
                     editor_height = max(360, min(470, round(width * 1.05)))
-                draw_value = StreamJSME(
+                    draw_value = StreamJSME(
                         smiles=st.session_state.get("panura_editor_seed", ""),
                         width=width, height=editor_height, margin=0,
                         key=f'panura_live_editor_{st.session_state.get("panura_editor_generation", 0)}',
