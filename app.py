@@ -72,8 +72,7 @@ def predict(smiles, assets):
     return value, similarity
 
 st.image(str(ROOT / "assets" / "panura-logo.svg"), width=340)
-st.markdown("""<div class="hero"><div class="eyebrow">PAN SCIENTIFIC APPLICATIONS · CHEMINFORMATICS</div>
-<h1>PanURA</h1><p>Interactive and Explainable QSAR for <i>H. pylori</i> Urease Inhibitor Discovery</p></div>""", unsafe_allow_html=True)
+
 
 with st.sidebar:
     st.image(str(ROOT / "assets" / "panura-logo.svg"), use_container_width=True)
