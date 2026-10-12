@@ -71,7 +71,7 @@ def test_hamburger_anchored_right_and_closes_after_navigation(page, app_url, wid
     option = page.get_by_role("button", name="Batch Screening")
     expect(option).to_be_visible()
     option.click()
-    expect(page.get_by_text("Load SMILES, predict activities")).to_be_visible()
+    expect(page.get_by_text("Load SMILES, predict activities", exact=False)).to_be_visible()
     expect(page.get_by_role("button", name="Batch Screening")).to_have_count(0)
     expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
 
@@ -87,3 +87,35 @@ def test_menu_escape_and_outside_click(page, app_url):
     page.get_by_role("button", name="Open navigation menu").click()
     page.get_by_text("Molecular prediction workspace").click()
     expect(page.get_by_role("button", name="Model & Methods")).to_have_count(0)
+
+
+@pytest.mark.parametrize("width,height", [(320, 700), (360, 780), (390, 844), (430, 932), (768, 1024)])
+def test_molecular_drawer_fully_within_mobile_viewport(page, app_url, width, height):
+    """JSME frame, not just its outer card, must fit the screen."""
+    page.set_viewport_size({"width": width, "height": height})
+    page.goto(app_url)
+    editor_frame = page.locator('iframe').first
+    expect(editor_frame).to_be_visible(timeout=30000)
+    # Wait for the width-probe callback to determine actual column width.
+    page.wait_for_timeout(700)
+    dimensions = editor_frame.bounding_box()
+    assert dimensions is not None
+    assert dimensions["x"] >= 0, dimensions
+    assert dimensions["x"] + dimensions["width"] <= width + 2, dimensions
+    # No fixed 550px editor is allowed on a narrow phone.
+    if width <= 430:
+        assert dimensions["width"] <= width - 12, dimensions
+    assert dimensions["height"] >= 320, dimensions
+
+
+def test_drawer_keeps_full_width_on_mobile_landscape(page, app_url):
+    page.set_viewport_size({"width": 844, "height": 390})
+    page.goto(app_url)
+    frame = page.locator("iframe").first
+    expect(frame).to_be_visible(timeout=30000)
+    bounds = frame.bounding_box()
+    assert bounds is not None
+    assert bounds["x"] >= 0
+    assert bounds["x"] + bounds["width"] <= 846
+    # On tablet-size / landscape viewports, the editor is stacked full-width.
+    assert bounds["width"] >= 500
