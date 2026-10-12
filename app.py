@@ -5,12 +5,12 @@ import hashlib
 from pathlib import Path
 
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 from rdkit.Chem import Descriptors
 
 from panura_engine import load_assets, parse_smiles, predict_smiles
 from panura_inputs import read_screening_file
+from panura_visuals import activity_distribution_plot, molecule_activity_plot, prepare_activity_data
 from panura_navigation import available_editor_width, render_navigation
 
 ROOT = Path(__file__).resolve().parent
@@ -211,27 +211,39 @@ elif page == "Batch Screening":
                         molecule_columns,
                         index=molecule_columns.index(candidates[0]) if candidates else 0,
                     )
-                st.dataframe(df.head(15), use_container_width=True)
-                current_id = (source_id, selected)
+                st.dataframe(df.head(15), use_container_width=True, hide_index=True)
+                id_column = df.columns[0]  # The importer keeps the original identifier first.
+                similarity_available = bool(
+                    assets is not None
+                    and assets.training_fingerprints is not None
+                    and len(assets.training_fingerprints) > 0
+                )
+                # Schema-version token invalidates old results with an empty
+                # max_tanimoto column after an application upgrade.
+                current_id = (source_id, selected, similarity_available, "activity-v2")
                 if st.button("Run Screening", type="primary", disabled=assets is None):
                     rows = []
                     progress = st.progress(0)
                     for i, smi in enumerate(df[selected]):
                         try:
                             result = cached_prediction(str(smi))
-                            rows.append({
+                            record = {
                                 "pIC50_pred": result["pic50"],
                                 "IC50_uM_pred": result["ic50_um"],
-                                "max_tanimoto": result["max_tanimoto"],
                                 "status": "OK",
-                            })
+                            }
+                            if similarity_available:
+                                record["max_tanimoto"] = result["max_tanimoto"]
+                            rows.append(record)
                         except Exception as exc:
-                            rows.append({
+                            record = {
                                 "pIC50_pred": float("nan"),
                                 "IC50_uM_pred": float("nan"),
-                                "max_tanimoto": float("nan"),
                                 "status": str(exc),
-                            })
+                            }
+                            if similarity_available:
+                                record["max_tanimoto"] = float("nan")
+                            rows.append(record)
                         progress.progress((i + 1) / len(df))
                     st.session_state["panura_batch"] = (
                         current_id,
@@ -240,16 +252,53 @@ elif page == "Batch Screening":
                 cached_batch = st.session_state.get("panura_batch")
                 if cached_batch is not None and cached_batch[0] == current_id:
                     output = cached_batch[1]
-                    st.dataframe(output, use_container_width=True)
-                    successful = output.dropna(subset=["pIC50_pred"])
+                    st.dataframe(output, use_container_width=True, hide_index=True)
+                    if not similarity_available:
+                        st.caption("Maximum Tanimoto is not shown: the original training fingerprints have not been supplied.")
+                    successful = prepare_activity_data(output)
                     if not successful.empty:
-                        st.plotly_chart(
-                            px.histogram(
-                                successful, x="pIC50_pred", nbins=25,
-                                title="Predicted pIC₅₀ distribution",
-                            ),
-                            use_container_width=True,
+                        st.caption(
+                            f"Predicted activity · {len(successful):,} molecules · "
+                            f"median pIC₅₀ {successful['pIC50_pred'].median():.2f}"
                         )
+                        plot_config = {
+                            "displaylogo": False,
+                            "responsive": True,
+                            "toImageButtonOptions": {
+                                "filename": "PanURA_predicted_activity",
+                                "format": "png",
+                                "scale": 3,
+                            },
+                        }
+                        if len(successful) <= 40:
+                            st.plotly_chart(
+                                molecule_activity_plot(successful, id_column, selected),
+                                use_container_width=True,
+                                config=plot_config,
+                                key="panura_molecule_profile",
+                            )
+                            if len(successful) >= 20:
+                                with st.expander("Activity distribution"):
+                                    st.plotly_chart(
+                                        activity_distribution_plot(successful),
+                                        use_container_width=True,
+                                        config=plot_config,
+                                        key="panura_distribution_optional",
+                                    )
+                        else:
+                            st.plotly_chart(
+                                activity_distribution_plot(successful),
+                                use_container_width=True,
+                                config=plot_config,
+                                key="panura_distribution_primary",
+                            )
+                            with st.expander("Molecule-by-molecule activity"):
+                                st.plotly_chart(
+                                    molecule_activity_plot(successful, id_column, selected),
+                                    use_container_width=True,
+                                    config=plot_config,
+                                    key="panura_molecule_profile_optional",
+                                )
                     st.download_button(
                         "Download predictions (CSV)",
                         data=output.to_csv(index=False).encode("utf-8"),
