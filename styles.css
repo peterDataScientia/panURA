@@ -64,3 +64,12 @@ header[data-testid="stHeader"]{background:transparent}
 [data-testid="stFileUploader"]{border:1px solid #d6e5ee;box-shadow:0 8px 26px #1834500c;padding:18px;border-radius:14px}
 [data-testid="stDataFrame"]{border-radius:12px;overflow:hidden}
 @media(max-width:800px){.block-container{padding:1rem}.workspace-intro{padding:19px}.workspace-label{font-size:1.32rem}.panel-tag{font-size:.53rem}.panel-heading{font-size:.88rem}}
+
+/* Full-width top hamburger navigation */
+section[data-testid="stSidebar"],[data-testid="collapsedControl"]{display:none!important}
+[data-testid="stSidebarCollapsedControl"]{display:none!important}
+.block-container{max-width:1560px;padding-top:.45rem}
+[data-testid="stPopover"] button{border:1px solid #bcd4e4!important;border-radius:12px!important;background:#ffffff!important;color:#173b63!important;font-weight:800!important;white-space:nowrap;padding:.55rem .8rem!important;box-shadow:0 4px 16px #112f5117}
+[data-testid="stPopover"] button:hover{background:#e9f5f7!important;border-color:#58b6b8!important}
+[data-testid="stPopoverBody"]{border:1px solid #d7e6f0;border-radius:14px;box-shadow:0 16px 40px #1d36502b}
+@media(max-width:720px){[data-testid="stPopover"] button{font-size:.75rem!important;padding:.5rem!important}.block-container{padding-left:.85rem;padding-right:.85rem}}
