@@ -82,6 +82,13 @@ if page == "Molecular Prediction":
             key="panura_input_mode",
         )
 
+        # Keep the JSME initialization seed stable during drawing callbacks.
+        previous_mode = st.session_state.get("panura_previous_input_mode")
+        if previous_mode != input_mode and input_mode == "Draw molecule":
+            st.session_state["panura_editor_seed"] = st.session_state.get("panura_last_valid_smiles", "")
+            st.session_state["panura_editor_generation"] = st.session_state.get("panura_editor_generation", 0) + 1
+        st.session_state["panura_previous_input_mode"] = input_mode
+
         smiles = ""
         if input_mode == "Enter SMILES":
             smiles = st.text_input(
@@ -95,9 +102,9 @@ if page == "Molecular Prediction":
                 from StreamJSME import StreamJSME
                 width = available_editor_width()
                 draw_value = StreamJSME(
-                    smiles=st.session_state.get("panura_last_valid_smiles", ""),
+                    smiles=st.session_state.get("panura_editor_seed", ""),
                     width=width, height=350, margin=0,
-                    key="panura_live_editor",
+                    key=f'panura_live_editor_{st.session_state.get("panura_editor_generation", 0)}',
                 )
                 smiles = draw_value.strip() if isinstance(draw_value, str) else ""
             except (ImportError, OSError) as exc:
