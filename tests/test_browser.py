@@ -170,7 +170,10 @@ def test_menu_switches_repeatedly_without_page_reload(page, app_url):
         link = page.get_by_role("link", name=destination, exact=True)
         expect(link).to_be_visible()
         link.click()
-        expect(page.get_by_text(expected, exact=True)).to_be_visible(timeout=15000)
+        if destination == "Model & Methods":
+            expect(page.get_by_role("heading", name=expected, exact=True)).to_be_visible(timeout=15000)
+        else:
+            expect(page.get_by_text(expected, exact=True)).to_be_visible(timeout=15000)
         expect(page.get_by_role("link", name=destination, exact=True)).to_have_count(0)
         expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
 
