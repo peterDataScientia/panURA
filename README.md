@@ -1,32 +1,50 @@
 # PanURA
-**An Interactive and Explainable QSAR Platform for Urease Inhibitor Discovery**
 
-PanURA is a Streamlit application for exploring chemical structures and predicting *H. pylori* urease inhibitor activity using a separately trained QSAR model.
+Interactive QSAR screening application for *Helicobacter pylori* urease inhibitors, using the original final LightGBM regression model.
 
-## Run
+## Start locally
+
+Use **Python 3.12** for reproducible deployment. Run:
+
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Model artifacts
-The application starts without a model and shows a clear **Model not configured** state. No synthetic predictions are generated.
+## Application structure
 
-Place compatible artifacts in `models/`:
-- `model.joblib`: trained regressor with a `predict` method
-- `feature_bits.json`: JSON array of the selected **zero-based PubChem fingerprint bit indices**, in training order (142 indices for the current study)
-- `scaler.joblib` (optional): fitted transform applied before model prediction
-- `train_fingerprints.npy` (optional): full 881-bit training fingerprints for Tanimoto similarity
-- `ad_reference.json` (optional): contains an independently validated applicability-domain specification; leverage is **not** calculated from a single query molecule
+- `app.py` — Streamlit pages, automatic prediction workflow and batch screening.
+- `panura_engine.py` — independent RDKit/PubChem fingerprint preprocessing and QSAR inference.
+- `panura_navigation.py` — accessible top-right hamburger menu using Streamlit Components v2 and editor width measurement.
+- `styles.css` — responsive design and motion, with reduced-motion support.
+- `tests/test_engine.py` — preprocessing/inference contract tests.
+- `tests/test_browser.py` — Playwright navigation checks at phone, tablet and desktop viewport sizes.
+- `.github/workflows/ci.yml` — automatic Python and browser tests.
 
-**Important:** prediction preprocessing, bit ordering, fingerprint version, scaling, target units, and applicability-domain rules must match the validated training notebook. The model from HematoAI targets a different protein and is not compatible.
+## Original model artifacts
 
-## Features
-- SMILES input and optional JSME sketcher
-- RDKit molecular structure rendering and descriptors
-- Single-molecule prediction and CSV/XLSX batch screening
-- Interactive Plotly distribution and downloadable CSV
-- Clear model status and scientific scope
-- Custom responsive CSS
+The app loads **only** `models/Final_Model.pkl.b64` (base64 encoding of the original `Final_Model.pkl`) and `models/Feature_Selection_Manifest.json.b64`. The manifest contains 142 selected `PubChem_<index>` descriptors; the original 881-bit fingerprints and feature ordering are retained. The app **does not use** `Auto_Model_Optimized_Pipeline.pkl` and does not refit the model.
 
-This is an initial application foundation, not a substitute for validation of deployed model artifacts.
+Optional `models/train_fingerprints.npy` must contain 881-bit rows for the training compounds. If present, the app reports maximum Tanimoto similarity; this is not a formal applicability-domain determination.
+
+Reported research metrics: 351 compounds; 280/71 Kennard–Stone training/test partition; test R² ≈ 0.782 and RMSE ≈ 0.493 pIC₅₀ units. These research metrics are not a claim of a newly validated web deployment.
+
+## Usage
+
+**Molecular Prediction:** Choose Draw molecule (StreamJSME) or Enter SMILES. JSME emits SMILES on its drawing-change callback; Python computes predictions on valid structures without an Apply/Predict button. The component measures editor space to choose a width that fits mobile and desktop. pIC₅₀ and estimated IC₅₀ (µM) update automatically when the input changes.
+
+**Batch Screening:** Upload CSV or XLSX, choose the SMILES column, run the model, inspect the table and export results.
+
+**Model & Methods:** Summary of descriptors, model and reported external evaluation.
+
+Use the top-right ☰ Menu to change screens. It closes on selection, Escape or a pointer event outside; the logo stays left and no sidebar is needed.
+
+## Tests
+
+```bash
+python -m pytest tests/test_engine.py
+python -m playwright install chromium
+python -m pytest tests/test_browser.py
+```
+
+The GitHub Actions workflow checks syntax, unit tests and Playwright interactions. Browser-mode behavior on Streamlit Cloud still needs real deployment verification after a successful build.
