@@ -12,7 +12,7 @@ EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 def test_example_csv_matches_example_txt():
     csv = read_screening_file("PanURA_example.csv", (EXAMPLES / "PanURA_example.csv").read_bytes())
     txt = read_screening_file("PanURA_example.txt", (EXAMPLES / "PanURA_example.txt").read_bytes())
-    assert list(csv.columns) == ["Molecule", "SMILES"]
+    assert list(csv.columns) == ["SMILES"]
     assert list(txt.columns) == ["SMILES"]
     assert len(csv) == len(txt) == 6
     assert csv.SMILES.tolist() == txt.SMILES.tolist()
