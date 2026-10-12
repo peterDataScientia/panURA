@@ -198,3 +198,24 @@ def test_upload_example_txt_shows_smiles_column(page, app_url):
     uploader.set_input_files(str(ROOT / "examples" / "PanURA_example.txt"))
     expect(page.get_by_text("SMILES column")).to_be_visible(timeout=15000)
     expect(page.get_by_role("button", name="Run Screening")).to_be_visible()
+
+
+def test_batch_csv_ids_remain_in_prediction_export(page, app_url):
+    """Each sample compound ID must survive inference and CSV download."""
+    import csv
+    import io
+    page.goto(app_url + "?view=batch")
+    expect(page.get_by_text("Upload CSV, TXT or Excel file containing SMILES")).to_be_visible(timeout=30000)
+    page.locator('input[type="file"]').set_input_files(str(ROOT / "examples" / "PanURA_example.csv"))
+    expect(page.get_by_role("button", name="Run Screening")).to_be_visible(timeout=15000)
+    page.get_by_role("button", name="Run Screening").click()
+    download_button = page.get_by_role("button", name="Download predictions (CSV)")
+    expect(download_button).to_be_visible(timeout=30000)
+    with page.expect_download() as event:
+        download_button.click()
+    content = event.value.path().read_text(encoding="utf-8")
+    records = list(csv.DictReader(io.StringIO(content)))
+    assert len(records) == 6
+    assert list(records[0])[:2] == ["ID", "SMILES"]
+    assert [r["ID"] for r in records] == [f"URA_{i:03d}" for i in range(1, 7)]
+    assert all(r["pIC50_pred"] for r in records)
