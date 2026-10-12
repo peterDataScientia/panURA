@@ -16,3 +16,23 @@ header[data-testid="stHeader"]{background:transparent}
 [data-testid="stFileUploader"]{background:#ffffff;border-radius:14px;padding:10px}
 .stTabs [data-baseweb="tab"]{font-weight:700}
 .notice{background:#fff8e7;border:1px solid #ead79c;padding:14px;border-radius:10px;color:#5b480e}
+
+/* HematoAI-inspired motion: refined for PanURA */
+@keyframes panuraBorderFlow {0%{background-position:0% 50%}100%{background-position:250% 50%}}
+@keyframes panuraReveal {from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@keyframes panuraShimmer {from{transform:translateX(-120%)}to{transform:translateX(120%)}}
+[data-testid="stMetric"]{
+ position:relative;border:2px solid transparent;
+ background:linear-gradient(#fff,#fff) padding-box,linear-gradient(110deg,#1769ad,#08a89b,#76c6ef,#1769ad) border-box;
+ background-size:100% 100%,250% 250%;
+ animation:panuraBorderFlow 7s linear infinite,panuraReveal .35s ease-out both;
+ transition:transform .2s ease,box-shadow .2s ease;
+}
+[data-testid="stMetric"]:hover{transform:translateY(-3px);box-shadow:0 10px 24px #173c7430}
+[data-testid="stMetricValue"]{font-variant-numeric:tabular-nums}
+[data-testid="stSidebar"]{background:linear-gradient(155deg,#101e43,#254a85,#116b78);background-size:160% 160%;animation:panuraBorderFlow 24s ease-in-out infinite}
+.stButton>button,.stDownloadButton>button{transition:transform .18s ease,box-shadow .18s ease}
+.stButton>button:hover,.stDownloadButton>button:hover{transform:translateY(-2px);box-shadow:0 5px 16px #1769ad33}
+[data-testid="stProgressBar"]>div{border-radius:8px;overflow:hidden}
+[data-testid="stProgressBar"]>div>div{background:linear-gradient(90deg,#1769ad,#08a89b,#6fd5d0);background-size:200% 100%;animation:panuraBorderFlow 3s linear infinite}
+@media(prefers-reduced-motion:reduce){[data-testid="stMetric"],[data-testid="stSidebar"],[data-testid="stProgressBar"]>div>div{animation:none!important}.stButton>button,.stDownloadButton>button{transition:none!important}}
