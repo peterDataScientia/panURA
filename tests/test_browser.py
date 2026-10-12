@@ -119,3 +119,31 @@ def test_drawer_keeps_full_width_on_mobile_landscape(page, app_url):
     assert bounds["x"] + bounds["width"] <= 846
     # On tablet-size / landscape viewports, the editor is stacked full-width.
     assert bounds["width"] >= 500
+
+
+@pytest.mark.parametrize("width,height", [(320, 700), (360, 780), (390, 844), (430, 932)])
+def test_mobile_view_not_cramped(page, app_url, width, height):
+    """Phone screen reflows content rather than shrinking multi-column cards."""
+    page.set_viewport_size({"width": width, "height": height})
+    page.goto(app_url)
+    expect(page.get_by_text("Molecular editor")).to_be_visible(timeout=30000)
+    iframe = page.locator("iframe").first
+    expect(iframe).to_be_visible(timeout=30000)
+    # Frame dimensions must be bounded by the user's actual screen.
+    bounds = iframe.bounding_box()
+    assert bounds is not None
+    assert bounds["x"] >= 0
+    assert bounds["x"] + bounds["width"] <= width + 2
+    assert bounds["width"] >= max(220, width - 65), bounds
+    # No horizontal overflow caused by a forcibly shrunken desktop workspace.
+    scroll = page.evaluate("() => ({scroll: document.documentElement.scrollWidth, view: document.documentElement.clientWidth})")
+    assert scroll["scroll"] <= scroll["view"] + 3, scroll
+
+    pic50 = page.locator('[data-testid="stMetric"]').filter(has_text="Predicted pIC₅₀").first
+    ic50 = page.locator('[data-testid="stMetric"]').filter(has_text="Estimated IC₅₀").first
+    expect(pic50).to_be_visible(timeout=30000)
+    expect(ic50).to_be_visible()
+    first = pic50.bounding_box()
+    second = ic50.bounding_box()
+    assert first is not None and second is not None
+    assert second["y"] >= first["y"] + first["height"] - 2, (first, second)
