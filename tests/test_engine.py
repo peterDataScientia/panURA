@@ -67,3 +67,16 @@ def test_non_finite_prediction_rejected():
     ref.model.predict = lambda x: np.array([np.nan])
     with pytest.raises(ValueError, match="non-finite"):
         predict_smiles("CCO", ref)
+
+
+def test_bundled_final_model_predicts_without_refitting():
+    """Smoke-test the real shipped pickle, manifest and fingerprint generator."""
+    from pathlib import Path
+    from panura_engine import load_assets
+
+    model_dir = Path(__file__).resolve().parents[1] / "models"
+    original = load_assets(model_dir)
+    assert original.indices.shape == (142,)
+    result = predict_smiles("CCO", original)
+    assert np.isfinite(result["pic50"])
+    assert result["ic50_um"] > 0
