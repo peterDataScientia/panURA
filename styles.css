@@ -73,3 +73,62 @@ section[data-testid="stSidebar"],[data-testid="collapsedControl"]{display:none!i
 [data-testid="stPopover"] button:hover{background:#e9f5f7!important;border-color:#58b6b8!important}
 [data-testid="stPopoverBody"]{border:1px solid #d7e6f0;border-radius:14px;box-shadow:0 16px 40px #1d36502b}
 @media(max-width:720px){[data-testid="stPopover"] button{font-size:.75rem!important;padding:.5rem!important}.block-container{padding-left:.85rem;padding-right:.85rem}}
+
+/* Adaptive phone, tablet and desktop layout */
+html,body,.stApp{max-width:100%;overflow-x:hidden}
+.stApp [data-testid="stMainBlockContainer"]{width:100%;min-width:0}
+.stApp .block-container{width:min(100%,1560px);box-sizing:border-box}
+.stApp [data-testid="stHorizontalBlock"]>div{min-width:0}
+.stApp img{max-width:100%;height:auto}
+.stApp [data-testid="stImage"]{max-width:100%}
+.stApp [data-testid="stImage"] img{max-width:100%;height:auto}
+.stApp iframe{max-width:100%;border-radius:10px}
+.stApp [data-testid="stDataFrame"],.stApp [data-testid="stTable"]{max-width:100%;overflow-x:auto}
+.stApp [data-testid="stPlotlyChart"]{max-width:100%;overflow:hidden}
+.stApp [data-testid="stWidgetLabel"]{overflow-wrap:anywhere}
+.stApp .workspace-label,.stApp .workspace-sub,.stApp .panel-heading{overflow-wrap:anywhere}
+.stApp button{min-height:44px;touch-action:manipulation}
+.st-key-panura_top_nav [data-testid="stHorizontalBlock"]{align-items:center}
+.st-key-panura_top_nav [data-testid="stButton"] button{min-height:46px;background:linear-gradient(110deg,#143b6d,#087e82);border:1px solid #0e8587;color:#fff;border-radius:11px;font-weight:800}
+.st-key-panura_top_nav [data-testid="stButton"] button:hover{background:linear-gradient(110deg,#1d528f,#0e9994);color:#fff}
+.st-key-panura_menu_panel [data-testid="stVerticalBlockBorderWrapper"]{border-radius:14px;box-shadow:0 14px 30px #193e6720;background:#fff}
+.st-key-panura_menu_panel button{min-height:47px;text-align:left;white-space:normal}
+@media(min-width:1100px){
+ .stApp .block-container{padding-inline:clamp(1.75rem,3vw,3.5rem)}
+ .stApp .workspace-intro{margin-top:10px}
+}
+@media(min-width:701px) and (max-width:1099px){
+ .stApp .block-container{padding:1rem 1.3rem 2rem}
+ .stApp .workspace-intro{padding:20px 23px}
+ .stApp .workspace-label{font-size:1.45rem}
+}
+@media(max-width:700px){
+ .stApp .block-container{padding:.65rem .8rem 2rem!important}
+ .stApp .top-accent{margin-bottom:8px}
+ .st-key-panura_top_nav [data-testid="stHorizontalBlock"]{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:10px!important;align-items:center!important}
+ .st-key-panura_top_nav [data-testid="stHorizontalBlock"]>div:first-child{flex:1 1 auto!important;width:auto!important;min-width:0!important}
+ .st-key-panura_top_nav [data-testid="stHorizontalBlock"]>div:last-child{flex:0 0 100px!important;width:100px!important;min-width:100px!important}
+ .st-key-panura_top_nav [data-testid="stImage"] img{max-height:64px;width:auto;object-fit:contain}
+ .st-key-panura_top_nav button{width:100%;font-size:.82rem;padding:8px!important;white-space:nowrap}
+ .st-key-panura_menu_panel [data-testid="stHorizontalBlock"]{display:block!important}
+ .st-key-panura_menu_panel [data-testid="stHorizontalBlock"]>div:first-child{display:none!important}
+ .st-key-panura_menu_panel [data-testid="stHorizontalBlock"]>div:last-child{width:100%!important;min-width:0!important}
+ .stApp .workspace-intro{padding:19px 16px;border-radius:14px;margin:10px 0 16px}
+ .stApp .workspace-label{font-size:1.25rem;line-height:1.3}
+ .stApp .workspace-sub{font-size:.79rem;line-height:1.5}
+ .stApp .workspace-intro::after{width:125px;height:125px;right:-35px;top:-35px}
+ .stApp .panel-heading{font-size:.88rem;gap:6px;padding:11px 10px}
+ .stApp .panel-tag{font-size:.55rem;padding:4px 6px;letter-spacing:0}
+ .stApp .empty-console{min-height:190px;padding:20px 12px}
+ .stApp [data-testid="stMetric"]{min-height:78px;padding:10px}
+ .stApp [data-testid="stMetricValue"]{font-size:1.25rem}
+ .stApp [data-testid="stMetricLabel"]{font-size:.7rem}
+ .stApp [data-testid="stFileUploader"]{padding:10px}
+ .stApp iframe{width:100%!important;min-width:0!important}
+}
+@media(max-width:380px){
+ .stApp .block-container{padding-left:.55rem!important;padding-right:.55rem!important}
+ .st-key-panura_top_nav [data-testid="stHorizontalBlock"]>div:last-child{flex-basis:88px!important;width:88px!important;min-width:88px!important}
+ .stApp .panel-tag{display:none}
+ .stApp .workspace-label{font-size:1.15rem}
+}
