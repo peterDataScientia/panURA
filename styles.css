@@ -1,6 +1,6 @@
-/* PanURA — single-source responsive design, no legacy patch cascade */
-:root{--navy:#14345e;--teal:#0d8e8e;--ink:#183350;--muted:#658097;--line:#d8e6ef;--paper:#ffffff}
+/* PanURA — single-source responsive design */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+:root{--navy:#14345e;--teal:#0d8e8e;--ink:#183350;--muted:#658097;--line:#d8e6ef;--paper:#ffffff}
 .stApp{font-family:'DM Sans',sans-serif;color:var(--ink);background:radial-gradient(circle at 90% 0%,#dcefeb 0,transparent 26%),linear-gradient(145deg,#f7fbff,#edf3f8)}
 section[data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"]{display:none}
 header[data-testid="stHeader"]{background:transparent}
