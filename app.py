@@ -74,62 +74,64 @@ if page == "Molecular Prediction":
     editor_col, results_col = st.columns([1.18, 1], gap="large", vertical_alignment="top")
 
     with editor_col:
-        section("01", "Molecular editor", "LIVE INPUT")
-        input_mode = st.segmented_control(
-            "Molecule input",
-            options=["Draw molecule", "Enter SMILES"],
-            default="Draw molecule",
-            key="panura_input_mode",
-        )
+        with st.container(key="panura_editor_column"):
+            section("01", "Molecular editor", "LIVE INPUT")
+            input_mode = st.segmented_control(
+                "Molecule input",
+                options=["Draw molecule", "Enter SMILES"],
+                default="Draw molecule",
+                key="panura_input_mode",
+            )
 
-        # Keep the JSME initialization seed stable during drawing callbacks.
-        previous_mode = st.session_state.get("panura_previous_input_mode")
-        if previous_mode != input_mode and input_mode == "Draw molecule":
-            st.session_state["panura_editor_seed"] = st.session_state.get("panura_last_valid_smiles", "")
-            st.session_state["panura_editor_generation"] = st.session_state.get("panura_editor_generation", 0) + 1
-        st.session_state["panura_previous_input_mode"] = input_mode
+            # Keep the JSME initialization seed stable during drawing callbacks.
+            previous_mode = st.session_state.get("panura_previous_input_mode")
+            if previous_mode != input_mode and input_mode == "Draw molecule":
+                st.session_state["panura_editor_seed"] = st.session_state.get("panura_last_valid_smiles", "")
+                st.session_state["panura_editor_generation"] = st.session_state.get("panura_editor_generation", 0) + 1
+            st.session_state["panura_previous_input_mode"] = input_mode
 
-        smiles = ""
-        if input_mode == "Enter SMILES":
-            smiles = st.text_input(
-                "SMILES",
-                value=st.session_state.get("panura_last_valid_smiles", ""),
-                placeholder="Enter a valid canonical or isomeric SMILES",
-                key="panura_manual_input",
-            ).strip()
-        else:
-            try:
-                from StreamJSME import StreamJSME
-                width = available_editor_width()
-                draw_value = StreamJSME(
-                    smiles=st.session_state.get("panura_editor_seed", ""),
-                    width=width, height=350, margin=0,
-                    key=f'panura_live_editor_{st.session_state.get("panura_editor_generation", 0)}',
-                )
-                smiles = draw_value.strip() if isinstance(draw_value, str) else ""
-            except (ImportError, OSError) as exc:
-                st.error(f"Sketcher could not load: {exc}")
-                smiles = st.text_input("SMILES", key="panura_editor_fallback").strip()
-
-        mol = parse_smiles(smiles)
-        if mol is not None:
-            st.session_state["panura_last_valid_smiles"] = smiles
-            with st.container():
+            smiles = ""
+            if input_mode == "Enter SMILES":
+                smiles = st.text_input(
+                    "SMILES",
+                    value=st.session_state.get("panura_last_valid_smiles", ""),
+                    placeholder="Enter a valid canonical or isomeric SMILES",
+                    key="panura_manual_input",
+                ).strip()
+            else:
                 try:
-                    from rdkit.Chem import Draw
-                    st.image(
-                        Draw.MolToImage(mol, size=(520, 300)),
-                        caption="2D molecular structure",
-                        use_container_width=True,
+                    from StreamJSME import StreamJSME
+                    width = available_editor_width()
+                    editor_height = max(360, min(470, round(width * 1.05)))
+                draw_value = StreamJSME(
+                        smiles=st.session_state.get("panura_editor_seed", ""),
+                        width=width, height=editor_height, margin=0,
+                        key=f'panura_live_editor_{st.session_state.get("panura_editor_generation", 0)}',
                     )
-                except (ImportError, OSError, RuntimeError):
-                    st.caption("2D preview unavailable.")
-            m1, m2, m3 = st.columns(3, gap="small")
-            m1.metric("Mol. wt.", f"{Descriptors.MolWt(mol):.1f}")
-            m2.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
-            m3.metric("H-donors", f"{Descriptors.NumHDonors(mol)}")
-        elif smiles:
-            st.caption("Complete a valid molecular structure to see predictions.")
+                    smiles = draw_value.strip() if isinstance(draw_value, str) else ""
+                except (ImportError, OSError) as exc:
+                    st.error(f"Sketcher could not load: {exc}")
+                    smiles = st.text_input("SMILES", key="panura_editor_fallback").strip()
+
+            mol = parse_smiles(smiles)
+            if mol is not None:
+                st.session_state["panura_last_valid_smiles"] = smiles
+                with st.container():
+                    try:
+                        from rdkit.Chem import Draw
+                        st.image(
+                            Draw.MolToImage(mol, size=(520, 300)),
+                            caption="2D molecular structure",
+                            use_container_width=True,
+                        )
+                    except (ImportError, OSError, RuntimeError):
+                        st.caption("2D preview unavailable.")
+                m1, m2, m3 = st.columns(3, gap="small")
+                m1.metric("Mol. wt.", f"{Descriptors.MolWt(mol):.1f}")
+                m2.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
+                m3.metric("H-donors", f"{Descriptors.NumHDonors(mol)}")
+            elif smiles:
+                st.caption("Complete a valid molecular structure to see predictions.")
 
     with results_col:
         section("02", "Prediction console", "AUTO UPDATE")
