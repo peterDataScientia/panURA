@@ -71,7 +71,8 @@ def predict(smiles, assets):
         similarity = max(DataStructs.BulkTanimotoSimilarity(query, refs)) if refs else None
     return value, similarity
 
-st.image(str(ROOT / "assets" / "panura-logo.svg"), width=340)
+st.markdown('<div class="top-accent"></div>', unsafe_allow_html=True)
+st.image(str(ROOT / "assets" / "panura-logo.svg"), width=300)
 
 
 with st.sidebar:
@@ -86,9 +87,10 @@ if model_error:
     st.error("Prediction engine could not start: " + model_error)
 
 if page == "Molecular Prediction":
-    st.markdown('<div class="panel-heading">Molecular prediction workspace</div>', unsafe_allow_html=True)
-    left, right = st.columns([1, 1], gap="large")
+    st.markdown('<div class="workspace-intro"><div class="workspace-kicker">01 / LIVE SCREENING</div><div class="workspace-label">Molecular prediction workspace</div><div class="workspace-sub">Draw, explore and evaluate molecular activity in one continuous workflow.</div></div>', unsafe_allow_html=True)
+    left, right = st.columns([1.16, 1], gap="large")
     with left:
+        st.markdown('<div class="panel-heading"><span class="panel-index">01</span> Molecular editor <span class="panel-tag">LIVE INPUT</span></div>', unsafe_allow_html=True)
         # HematoAI-style single-sketch input: edited JSME structure drives reruns.
         # The component returns SMILES automatically; no Apply/Predict action.
         entered_smiles = st.text_input(
@@ -113,8 +115,8 @@ if page == "Molecular Prediction":
             b.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
             c.metric("H-bond donors", str(Descriptors.NumHDonors(mol)))
     with right:
-        st.markdown('<div class="panel-heading">Prediction console</div>', unsafe_allow_html=True)
-        st.caption("Draw or enter a molecule to predict urease inhibitory activity.")
+        st.markdown('<div class="panel-heading"><span class="panel-index">02</span> Prediction console <span class="panel-tag">AUTO UPDATE</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="console-lead">UREASE INHIBITION · REGRESSION OUTPUTS</div>', unsafe_allow_html=True)
         if assets is not None and mol is not None:
             try:
                 value, similarity = predict(smiles, assets)
@@ -125,11 +127,11 @@ if page == "Molecular Prediction":
             except Exception as exc:
                 st.error(f"Prediction failed: {exc}")
         elif not smiles:
-            st.caption("Prediction updates automatically when a valid molecule is entered or drawn.")
+            st.markdown('<div class="empty-console"><div class="empty-symbol">⌬</div><strong>Ready for a molecule</strong><p>Draw a structure or enter SMILES. Predictions appear automatically.</p><span class="live-indicator">● Awaiting structure</span></div>', unsafe_allow_html=True)
 
 
 elif page == "Batch Screening":
-    st.markdown('<div class="panel-heading">Batch screening</div>', unsafe_allow_html=True)
+    st.markdown('<div class="workspace-intro"><div class="workspace-kicker">02 / DATASET SCREENING</div><div class="workspace-label">Batch screening</div><div class="workspace-sub">Upload molecular datasets, calculate activities and export results.</div></div>', unsafe_allow_html=True)
     upload = st.file_uploader("Upload CSV or XLSX containing a SMILES column", type=["csv", "xlsx"])
     if upload:
         try:
@@ -160,7 +162,7 @@ elif page == "Batch Screening":
         except Exception as exc:
             st.error(f"Could not process uploaded data: {exc}")
 else:
-    st.subheader("Model and methods")
+    st.markdown('<div class="workspace-intro"><div class="workspace-kicker">03 / MODEL INFORMATION</div><div class="workspace-label">Model &amp; methods</div><div class="workspace-sub">Dataset characteristics, descriptor engineering and external evaluation.</div></div>', unsafe_allow_html=True)
     a, b, c, d = st.columns(4)
     a.metric("Curated compounds", "351")
     b.metric("Selected PubChem bits", "142")
