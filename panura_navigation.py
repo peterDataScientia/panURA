@@ -134,7 +134,7 @@ def render_navigation(logo_path: Path) -> str:
 
 def available_editor_width() -> int:
     """Measure the editor column using ResizeObserver, not CSS viewport guesses."""
-    known = st.session_state.get("panura_probe", {}).get("available", 330)
+    known = getattr(st.session_state.get("panura_probe"), "available", 330)
     result = width_component(
         data={"known": known}, default={"available": 330},
         key="panura_probe", width="stretch", height=1,
