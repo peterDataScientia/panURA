@@ -39,7 +39,7 @@ button:focus-visible{outline:3px solid #34c8ba;outline-offset:3px}
 @media(prefers-reduced-motion:no-preference){.panura-menu{animation:panura-open .16s ease-out}@keyframes panura-open{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}}
 """
 NAV_JS = """
-export default function({parentElement, data}) {
+export default function({parentElement, data, setStateValue}) {
     const root = parentElement.querySelector(".panura-shell");
     const logo = root.querySelector(".panura-logo");
     const toggle = root.querySelector(".panura-toggle");
@@ -65,11 +65,9 @@ export default function({parentElement, data}) {
         link.onclick = (event) => {
             event.preventDefault();
             close();
-            // Force a top-level navigation rather than relying on an anchor
-            // default action from inside a Streamlit component shadow tree.
-            const target = new URL(window.location.href);
-            target.searchParams.set("view", selected);
-            window.location.assign(target.toString());
+            // Streamlit Components v2: update persistent page selection.
+            // Do not use browser navigation from within a component.
+            setStateValue("page", selected);
         };
     }
     const outside = (event) => {
@@ -138,21 +136,44 @@ width_component = st.components.v2.component(
 )
 
 
-def render_navigation(logo_path: Path) -> str:
-    """Render accessible top-right menu with bookmarkable page links.
+def _on_page_change() -> None:
+    """Sync the component's new page before Streamlit reruns the app."""
+    state = st.session_state.get("panura_header", {})
+    choice = state.get("page") if isinstance(state, dict) else getattr(state, "page", None)
+    if choice in PAGES:
+        st.session_state["panura_view"] = choice
 
-    Real browser navigation avoids transient Streamlit v2 component events
-    that can be lost during reruns of the surrounding molecular editor.
+
+def render_navigation(logo_path: Path) -> str:
+    """Render the responsive hamburger with instant state-driven navigation.
+
+    A URL query parameter is honored for the initial page only. Subsequent
+    selections use the v2 component state, so selecting a menu item never
+    reloads the browser or resets the molecular drawing.
     """
-    section = str(st.query_params.get("view", "molecular")).lower()
-    if section not in PAGES:
-        section = "molecular"
+    query = str(st.query_params.get("view", "molecular")).lower()
+    initial = query if query in PAGES else "molecular"
+    if st.session_state.get("panura_view") not in PAGES:
+        st.session_state["panura_view"] = initial
+
+    current = st.session_state["panura_view"]
     logo_data = base64.b64encode(Path(logo_path).read_bytes()).decode("ascii")
-    navigation_component(
-        data={"logo": "data:image/svg+xml;base64," + logo_data, "page": section},
-        key="panura_header", width="stretch", height="content",
+    result = navigation_component(
+        data={
+            "logo": "data:image/svg+xml;base64," + logo_data,
+            "page": current,
+        },
+        default={"page": current},
+        key="panura_header",
+        width="stretch",
+        height="content",
+        on_page_change=_on_page_change,
     )
-    return PAGES[section]
+
+    if result.page in PAGES:
+        current = result.page
+        st.session_state["panura_view"] = current
+    return PAGES[current]
 
 
 def available_editor_width() -> int:
