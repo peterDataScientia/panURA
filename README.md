@@ -14,10 +14,12 @@ streamlit run app.py
 ## Application structure
 
 - `app.py` — Streamlit pages, automatic prediction workflow and batch screening.
+- `panura_inputs.py` — CSV, TXT and XLSX upload parsing.
 - `panura_engine.py` — independent RDKit/PubChem fingerprint preprocessing and QSAR inference.
 - `panura_navigation.py` — accessible top-right hamburger menu using Streamlit Components v2 and editor width measurement.
 - `styles.css` — responsive design and motion, with reduced-motion support.
 - `tests/test_engine.py` — preprocessing/inference contract tests.
+- `tests/test_inputs.py` — sample-file integrity and CSV/TXT parsing tests.
 - `tests/test_browser.py` — Playwright navigation checks at phone, tablet and desktop viewport sizes.
 - `.github/workflows/ci.yml` — automatic Python and browser tests.
 
@@ -33,7 +35,7 @@ Reported research metrics: 351 compounds; 280/71 Kennard–Stone training/test p
 
 **Molecular Prediction:** Choose Draw molecule (StreamJSME) or Enter SMILES. JSME emits SMILES on its drawing-change callback; Python computes predictions on valid structures without an Apply/Predict button. The component measures editor space to choose a width that fits mobile and desktop. pIC₅₀ and estimated IC₅₀ (µM) update automatically when the input changes.
 
-**Batch Screening:** Upload CSV or XLSX, choose the SMILES column, run the model, inspect the table and export results.
+**Batch Screening:** Download a ready-to-use example from `examples/PanURA_example.csv` or `examples/PanURA_example.txt`, or upload your own CSV, TXT or XLSX file. TXT supports one SMILES per line (optionally prefixed by a `SMILES` header); CSV/XLSX files should contain a SMILES column. Choose the SMILES column, run screening, inspect the predictions and export results. Example molecules are for input-format demonstration, not measured inhibition data.
 
 **Model & Methods:** Summary of descriptors, model and reported external evaluation.
 
