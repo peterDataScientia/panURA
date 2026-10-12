@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+.stApp {background:linear-gradient(165deg,#f8faff 0%,#eef3fb 100%);font-family:'DM Sans',sans-serif;color:#152341}
+header[data-testid="stHeader"]{background:transparent}
+.block-container{padding-top:1.5rem;max-width:1320px}
+[data-testid="stSidebar"]{background:linear-gradient(180deg,#101e43,#203d73)}
+[data-testid="stSidebar"] *{color:#f4f7ff!important}
+.hero{background:linear-gradient(115deg,#14244e,#244e88 70%,#0e958d);border-radius:20px;padding:25px 30px;color:white;margin-bottom:22px;box-shadow:0 12px 35px #152c5922}
+.hero h1{font-size:2.35rem;font-weight:800;margin:0;letter-spacing:-.06rem;color:white}
+.hero p{margin:8px 0 0;color:#d9e7f7;font-size:1rem}
+.eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:#7ee7d9;font-weight:800}
+.panel-heading{font-size:1.1rem;font-weight:800;color:#172a51;margin:12px 0}
+[data-testid="stMetric"]{background:white;border:1px solid #dfe7f2;border-radius:14px;padding:15px 18px;box-shadow:0 5px 20px #182b5110}
+[data-testid="stMetricValue"]{color:#16396b;font-weight:800}
+.stButton>button[kind="primary"]{background:linear-gradient(100deg,#1769ad,#079b91);border:0;color:white;border-radius:10px;font-weight:700}
+.stDownloadButton>button{border-radius:10px;border-color:#0b928b;color:#086f6a}
+[data-testid="stFileUploader"]{background:#ffffff;border-radius:14px;padding:10px}
+.stTabs [data-baseweb="tab"]{font-weight:700}
+.notice{background:#fff8e7;border:1px solid #ead79c;padding:14px;border-radius:10px;color:#5b480e}
