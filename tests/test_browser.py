@@ -68,11 +68,11 @@ def test_hamburger_anchored_right_and_closes_after_navigation(page, app_url, wid
     assert coords["x"] + coords["width"] <= width + 2
 
     trigger.click()
-    option = page.get_by_role("button", name="Batch Screening")
+    option = page.get_by_role("link", name="Batch Screening")
     expect(option).to_be_visible()
     option.click()
     expect(page.get_by_role("heading", name="Batch screening")).to_be_visible(timeout=12000)
-    expect(page.get_by_role("button", name="Batch Screening")).to_have_count(0)
+    expect(page.get_by_role("link", name="Batch Screening")).to_have_count(0)
     expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
 
 
@@ -80,9 +80,9 @@ def test_menu_escape_and_outside_click(page, app_url):
     page.set_viewport_size({"width": 390, "height": 844})
     page.goto(app_url)
     page.get_by_role("button", name="Open navigation menu").click()
-    expect(page.get_by_role("button", name="Model & Methods")).to_be_visible()
+    expect(page.get_by_role("link", name="Model & Methods")).to_be_visible()
     page.keyboard.press("Escape")
-    expect(page.get_by_role("button", name="Model & Methods")).to_have_count(0)
+    expect(page.get_by_role("link", name="Model & Methods")).to_have_count(0)
 
     page.get_by_role("button", name="Open navigation menu").click()
     page.get_by_text("Molecular prediction workspace").click()
