@@ -66,11 +66,6 @@ except Exception as exc:
     st.error("Unable to start the prediction engine: " + engine_error)
 
 if page == "Molecular Prediction":
-    intro(
-        "01 / LIVE SCREENING",
-        "Molecular prediction workspace",
-        "Draw or enter a structure; results are calculated automatically.",
-    )
     editor_col, results_col = st.columns([1.18, 1], gap="large", vertical_alignment="top")
 
     with editor_col:
