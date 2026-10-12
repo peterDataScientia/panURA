@@ -1,6 +1,7 @@
-NC(N)=O
-NC(N)=S
-CC(=O)NO
-NC(=O)c1ccccc1
-Oc1ccccc1
-CC(=O)Nc1ccc(O)cc1
+ID	SMILES
+URA_001	NC(N)=O
+URA_002	NC(N)=S
+URA_003	CC(=O)NO
+URA_004	NC(=O)c1ccccc1
+URA_005	Oc1ccccc1
+URA_006	CC(=O)Nc1ccc(O)cc1
