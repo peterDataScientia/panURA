@@ -116,22 +116,8 @@ if page == "Molecular Prediction":
             mol = parse_smiles(smiles)
             if mol is not None:
                 st.session_state["panura_last_valid_smiles"] = smiles
-                with st.container():
-                    try:
-                        from rdkit.Chem import Draw
-                        st.image(
-                            Draw.MolToImage(mol, size=(520, 300)),
-                            caption="2D molecular structure",
-                            use_container_width=True,
-                        )
-                    except (ImportError, OSError, RuntimeError):
-                        st.caption("2D preview unavailable.")
-                m1, m2, m3 = st.columns(3, gap="small")
-                m1.metric("Mol. wt.", f"{Descriptors.MolWt(mol):.1f}")
-                m2.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
-                m3.metric("H-donors", f"{Descriptors.NumHDonors(mol)}")
             elif smiles:
-                st.caption("Complete a valid molecular structure to see predictions.")
+                st.caption("Complete the molecular structure to calculate activity.")
 
     with results_col:
         section("02", "Prediction console", "AUTO UPDATE")
@@ -156,6 +142,27 @@ if page == "Molecular Prediction":
                     st.metric("Max. training-set Tanimoto", f'{result["max_tanimoto"]:.3f}')
             except Exception as exc:
                 st.error(f"Prediction error: {exc}")
+
+    # Keep the live output directly after the mobile editor.
+    # Secondary descriptors and duplicate 2D preview are collapsed by default,
+    # so phone users do not scroll past them to reach pIC50 and IC50.
+    if mol is not None:
+        with st.container(key="panura_structure_details"):
+            with st.expander("Molecular properties and 2D structure", expanded=False):
+                with st.container(key="panura_descriptor_metrics"):
+                    m1, m2, m3 = st.columns(3, gap="small")
+                    m1.metric("Molecular weight", f"{Descriptors.MolWt(mol):.1f}")
+                    m2.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
+                    m3.metric("H-bond donors", f"{Descriptors.NumHDonors(mol)}")
+                try:
+                    from rdkit.Chem import Draw
+                    st.image(
+                        Draw.MolToImage(mol, size=(620, 360)),
+                        caption="2D molecular structure",
+                        use_container_width=True,
+                    )
+                except (ImportError, OSError, RuntimeError):
+                    st.caption("2D structure preview unavailable.")
 
 elif page == "Batch Screening":
     intro(
