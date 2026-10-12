@@ -78,11 +78,11 @@ with st.sidebar:
     page = st.radio("Workspace", ["Molecular Prediction", "Batch Screening", "Model & Methods"], label_visibility="collapsed")
     st.divider()
     st.caption("PubChem fingerprints · QSAR regression · Structure-aware screening")
-    st.caption("Research use only · Predictions require a validated model.")
+
 
 assets, model_error = load_predictor()
 if model_error:
-    st.warning("Model not configured — " + model_error)
+    st.error("Prediction engine could not start: " + model_error)
 
 if page == "Molecular Prediction":
     st.markdown('<div class="panel-heading">Molecular prediction workspace</div>', unsafe_allow_html=True)
@@ -108,15 +108,14 @@ if page == "Molecular Prediction":
                 from rdkit.Chem import Draw
                 st.image(Draw.MolToImage(mol, size=(520, 300)), caption="RDKit 2D molecular structure")
             except (ImportError, OSError, RuntimeError) as drawing_error:
-                st.warning("2D rendering is unavailable in this environment; molecular prediction remains accessible.")
-                st.caption(str(drawing_error))
+                st.caption("2D structure preview could not be rendered.")
             a, b, c = st.columns(3)
             a.metric("Molecular weight", f"{Descriptors.MolWt(mol):.1f}")
             b.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
             c.metric("H-bond donors", str(Descriptors.NumHDonors(mol)))
     with right:
         st.markdown('<div class="panel-heading">Prediction console</div>', unsafe_allow_html=True)
-        st.caption("Predicted pIC₅₀ is displayed only when validated artifacts are installed.")
+        st.caption("Draw or enter a molecule to predict urease inhibitory activity.")
         if st.button("Predict activity", type="primary", disabled=assets is None or mol is None, use_container_width=True):
             try:
                 value, similarity = predict(smiles, assets)
@@ -124,12 +123,10 @@ if page == "Molecular Prediction":
                 st.metric("Estimated IC₅₀", f"{10 ** (6-value):.3g} µM")
                 if similarity is not None:
                     st.metric("Maximum training-set Tanimoto", f"{similarity:.3f}")
-                st.info("Similarity alone is not a validated applicability-domain decision.")
+
             except Exception as exc:
                 st.error(f"Prediction failed: {exc}")
-        st.divider()
-        st.markdown("**Interpretability**")
-        st.info("Compound-specific SHAP will be enabled after the trained model and its explainer/background data are verified.")
+
 
 elif page == "Batch Screening":
     st.markdown('<div class="panel-heading">Batch screening</div>', unsafe_allow_html=True)
@@ -174,9 +171,7 @@ else:
 
 **Reported validation:** Kennard–Stone split (280 training / 71 test); test R² ≈ 0.782, test RMSE ≈ 0.493 pIC₅₀ units.
 
-**Deployment status:** The original CV-selected Final_Model.pkl and 142-bit training feature manifest are installed. No optimized model is used. Deployment predictions still require independent verification against the saved test predictions. These validation metrics describe the research model, not a newly validated deployment.
+**Prediction model:** Original CV-selected LightGBM model with 142 selected PubChem fingerprint features.
 
-**Applicability domain:** Similarity is an exploratory diagnostic; leverage requires the fitted training feature matrix or a validated AD reference. No query-only leverage formula is used.
-
-**SHAP:** Planned interactive explanations must be computed from the trained model, not a static image reused for every compound.
+**Outputs:** Predicted pIC₅₀ and estimated IC₅₀ (µM), with batch export.
 """)
