@@ -85,7 +85,7 @@ def test_menu_escape_and_outside_click(page, app_url):
     expect(page.get_by_role("link", name="Model & Methods")).to_have_count(0)
 
     page.get_by_role("button", name="Open navigation menu").click()
-    page.get_by_text("Molecular prediction workspace").click()
+    page.get_by_text("Molecular editor", exact=True).click()
     expect(page.get_by_role("button", name="Model & Methods")).to_have_count(0)
 
 
@@ -158,19 +158,19 @@ def test_menu_switches_repeatedly_without_page_reload(page, app_url):
     """Selecting a menu item must change the displayed Streamlit page each time."""
     page.set_viewport_size({"width": 390, "height": 844})
     page.goto(app_url)
-    expect(page.get_by_role("heading", name="Molecular prediction workspace")).to_be_visible(timeout=30000)
+    expect(page.get_by_text("Molecular editor", exact=True)).to_be_visible(timeout=30000)
 
     for destination, expected in [
         ("Batch Screening", "Batch screening"),
         ("Model & Methods", "Model & Methods"),
-        ("Molecular Prediction", "Molecular prediction workspace"),
+        ("Molecular Prediction", "Molecular editor"),
         ("Batch Screening", "Batch screening"),
     ]:
         page.get_by_role("button", name="Open navigation menu").click()
         link = page.get_by_role("link", name=destination, exact=True)
         expect(link).to_be_visible()
         link.click()
-        expect(page.get_by_role("heading", name=expected, exact=True)).to_be_visible(timeout=15000)
+        expect(page.get_by_text(expected, exact=True)).to_be_visible(timeout=15000)
         expect(page.get_by_role("link", name=destination, exact=True)).to_have_count(0)
         expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
 
