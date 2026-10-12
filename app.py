@@ -193,11 +193,15 @@ elif page == "Batch Screening":
                 st.info("The uploaded dataset is empty.")
             else:
                 candidates = [c for c in df.columns if "smiles" in str(c).lower()]
-                selected = st.selectbox(
-                    "SMILES column",
-                    list(df.columns),
-                    index=list(df.columns).index(candidates[0]) if candidates else 0,
-                )
+                if len(df.columns) == 1:
+                    selected = df.columns[0]
+                    st.caption(f"SMILES column: {selected}")
+                else:
+                    selected = st.selectbox(
+                        "SMILES column",
+                        list(df.columns),
+                        index=list(df.columns).index(candidates[0]) if candidates else 0,
+                    )
                 st.dataframe(df.head(15), use_container_width=True)
                 current_id = (source_id, selected)
                 if st.button("Run Screening", type="primary", disabled=assets is None):
