@@ -1,193 +1,243 @@
-"""PanURA: urease inhibitor QSAR screening platform."""
+"""PanURA · live urease-inhibitor QSAR screening workspace."""
 from __future__ import annotations
 
-import io
-import base64
-import json
+import hashlib
 from pathlib import Path
 
-import joblib
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from rdkit import Chem, DataStructs
 from rdkit.Chem import Descriptors
-from skfp.fingerprints import PubChemFingerprint
+
+from panura_engine import load_assets, parse_smiles, predict_smiles
+from panura_navigation import available_editor_width, render_navigation
 
 ROOT = Path(__file__).resolve().parent
-MODEL_DIR = ROOT / "models"
-st.set_page_config(page_title="PanURA | Urease QSAR", page_icon="🧬", layout="wide", initial_sidebar_state="collapsed")
-css_path = ROOT / "styles.css"
-if css_path.exists():
-    st.markdown("<style>" + css_path.read_text(encoding="utf-8") + "</style>", unsafe_allow_html=True)
+MODELS = ROOT / "models"
 
-@st.cache_resource
-def load_predictor():
-    model_path = MODEL_DIR / "Final_Model.pkl.b64"
-    manifest_path = MODEL_DIR / "Feature_Selection_Manifest.json.b64"
-    if not model_path.exists() or not manifest_path.exists():
-        return None, "Original model or feature manifest is missing."
-    try:
-        model = joblib.load(io.BytesIO(base64.b64decode(model_path.read_text(encoding="ascii"))))
-        manifest = json.loads(base64.b64decode(manifest_path.read_text(encoding="ascii")))
-        names = manifest["selected_features"]
-        if len(names) != 142 or len(set(names)) != 142 or any(not name.startswith("PubChem_") for name in names):
-            raise ValueError("Invalid 142-feature training manifest")
-        bits = [int(name.split("_")[1]) for name in names]
-        if any(i < 0 or i >= 881 for i in bits):
-            raise ValueError("PubChem feature index out of range")
-        if getattr(model, "n_features_in_", 142) != 142:
-            raise ValueError("Final model does not expect 142 descriptors")
-        train_path = MODEL_DIR / "train_fingerprints.npy"
-        train = np.load(train_path, allow_pickle=False) if train_path.exists() else None
-        if train is not None and (train.ndim != 2 or train.shape[1] != 881):
-            raise ValueError("Training fingerprints must have 881 columns")
-        return {"model": model, "bits": bits, "train": train, "fp": PubChemFingerprint()}, None
-    except Exception as exc:
-        return None, f"Could not load model artifacts: {exc}"
+st.set_page_config(
+    page_title="PanURA | Urease QSAR",
+    page_icon="🧬",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+st.markdown(
+    "<style>" + (ROOT / "styles.css").read_text(encoding="utf-8") + "</style>",
+    unsafe_allow_html=True,
+)
 
-def parse_smiles(smiles):
-    if not isinstance(smiles, str) or not smiles.strip():
-        return None
-    mol = Chem.MolFromSmiles(smiles.strip())
-    return mol
 
-def predict(smiles, assets):
-    mol = parse_smiles(smiles)
-    if mol is None:
-        raise ValueError("Invalid SMILES")
-    fp = np.asarray(assets["fp"].transform([smiles.strip()]), dtype=np.float64)
-    if fp.shape != (1, 881):
-        raise ValueError(f"Unexpected fingerprint shape: {fp.shape}")
-    x = fp[:, assets["bits"]]
-    value = float(assets["model"].predict(x)[0])
-    if not np.isfinite(value):
-        raise ValueError("Non-finite prediction")
-    similarity = None
-    if assets["train"] is not None:
-        query = DataStructs.CreateFromBitString("".join(map(str, fp[0].astype(int))))
-        refs = [DataStructs.CreateFromBitString("".join(map(str, row.astype(int)))) for row in assets["train"]]
-        similarity = max(DataStructs.BulkTanimotoSimilarity(query, refs)) if refs else None
-    return value, similarity
+@st.cache_resource(show_spinner=False)
+def predictor_assets():
+    return load_assets(MODELS)
 
-if "panura_current_page" not in st.session_state:
-    st.session_state.panura_current_page = "Molecular Prediction"
-if "panura_menu_open" not in st.session_state:
-    st.session_state.panura_menu_open = False
 
-st.markdown('<div class="top-accent"></div>', unsafe_allow_html=True)
-# A single anchored header: CSS positions the button at the top-right
-# regardless of whether the mobile browser requests desktop site.
-with st.container(key="panura_top_nav"):
-    st.image(str(ROOT / "assets" / "panura-logo.svg"), width=240)
-    if st.button("☰ Menu", key="panura_menu_toggle"):
-        st.session_state.panura_menu_open = not st.session_state.panura_menu_open
-        st.rerun()
+@st.cache_data(show_spinner=False, max_entries=750)
+def cached_prediction(smiles: str):
+    # Cache repeated drawings without changing the original trained model.
+    return predict_smiles(smiles, predictor_assets())
 
-    if st.session_state.panura_menu_open:
-        with st.container(key="panura_menu_panel"):
-            for option in ("Molecular Prediction", "Batch Screening", "Model & Methods"):
-                if st.button(option, key=f"panura_nav_{option}", use_container_width=True):
-                    st.session_state.panura_current_page = option
-                    st.session_state.panura_menu_open = False
-                    st.rerun()
 
-page = st.session_state.panura_current_page
+def intro(section: str, title: str, subtitle: str):
+    # All strings below are fixed in code; do not render user input as HTML.
+    st.markdown(
+        f'<section class="panura-intro"><div class="eyebrow">{section}</div>'
+        f'<h2>{title}</h2><p>{subtitle}</p></section>',
+        unsafe_allow_html=True,
+    )
 
-assets, model_error = load_predictor()
-if model_error:
-    st.error("Prediction engine could not start: " + model_error)
+
+def section(number: str, title: str, tag: str):
+    st.markdown(
+        f'<div class="panura-section"><span class="num">{number}</span>'
+        f'<strong>{title}</strong><span class="tag">{tag}</span></div>',
+        unsafe_allow_html=True,
+    )
+
+
+st.markdown('<div class="panura-topline"></div>', unsafe_allow_html=True)
+page = render_navigation(ROOT / "assets" / "panura-logo.svg")
+
+try:
+    assets = predictor_assets()
+    engine_error = None
+except Exception as exc:
+    assets, engine_error = None, str(exc)
+    st.error("Unable to start the prediction engine: " + engine_error)
 
 if page == "Molecular Prediction":
-    st.markdown('<div class="workspace-intro"><div class="workspace-kicker">01 / LIVE SCREENING</div><div class="workspace-label">Molecular prediction workspace</div><div class="workspace-sub">Draw, explore and evaluate molecular activity in one continuous workflow.</div></div>', unsafe_allow_html=True)
-    left, right = st.columns([1.16, 1], gap="large", vertical_alignment="top")
-    with left:
-        st.markdown('<div class="panel-heading"><span class="panel-index">01</span> Molecular editor <span class="panel-tag">LIVE INPUT</span></div>', unsafe_allow_html=True)
-        # HematoAI-style single-sketch input: edited JSME structure drives reruns.
-        # The component returns SMILES automatically; no Apply/Predict action.
-        entered_smiles = st.text_input(
-            "Enter SMILES",
-            key="panura_smiles_input",
-            placeholder="Enter SMILES or draw a molecule below",
-        )
-        from StreamJSME import StreamJSME
-        drawn_smiles = StreamJSME(smiles=entered_smiles if entered_smiles else "")
-        smiles = drawn_smiles if isinstance(drawn_smiles, str) and drawn_smiles.strip() else entered_smiles
-        mol = parse_smiles(smiles) if smiles else None
-        if smiles and mol is None:
-            st.error("SMILES could not be parsed.")
-        if mol is not None:
-            try:
-                from rdkit.Chem import Draw
-                st.image(Draw.MolToImage(mol, size=(520, 300)), caption="RDKit 2D molecular structure", use_container_width=True)
-            except (ImportError, OSError, RuntimeError) as drawing_error:
-                st.caption("2D structure preview could not be rendered.")
-            a, b, c = st.columns(3)
-            a.metric("Molecular weight", f"{Descriptors.MolWt(mol):.1f}")
-            b.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
-            c.metric("H-bond donors", str(Descriptors.NumHDonors(mol)))
-    with right:
-        st.markdown('<div class="panel-heading"><span class="panel-index">02</span> Prediction console <span class="panel-tag">AUTO UPDATE</span></div>', unsafe_allow_html=True)
-        st.markdown('<div class="console-lead">UREASE INHIBITION · REGRESSION OUTPUTS</div>', unsafe_allow_html=True)
-        if assets is not None and mol is not None:
-            try:
-                value, similarity = predict(smiles, assets)
-                st.metric("Predicted pIC₅₀", f"{value:.3f}")
-                st.metric("Estimated IC₅₀", f"{10 ** (6-value):.3g} µM")
-                if similarity is not None:
-                    st.metric("Maximum training-set Tanimoto", f"{similarity:.3f}")
-            except Exception as exc:
-                st.error(f"Prediction failed: {exc}")
-        elif not smiles:
-            st.markdown('<div class="empty-console"><div class="empty-symbol">⌬</div><strong>Ready for a molecule</strong><p>Draw a structure or enter SMILES. Predictions appear automatically.</p><span class="live-indicator">● Awaiting structure</span></div>', unsafe_allow_html=True)
+    intro(
+        "01 / LIVE SCREENING",
+        "Molecular prediction workspace",
+        "Draw or enter a structure; results are calculated automatically.",
+    )
+    editor_col, results_col = st.columns([1.18, 1], gap="large", vertical_alignment="top")
 
+    with editor_col:
+        section("01", "Molecular editor", "LIVE INPUT")
+        input_mode = st.segmented_control(
+            "Molecule input",
+            options=["Draw molecule", "Enter SMILES"],
+            default="Draw molecule",
+            key="panura_input_mode",
+        )
+
+        smiles = ""
+        if input_mode == "Enter SMILES":
+            smiles = st.text_input(
+                "SMILES",
+                value=st.session_state.get("panura_last_valid_smiles", ""),
+                placeholder="Enter a valid canonical or isomeric SMILES",
+                key="panura_manual_input",
+            ).strip()
+        else:
+            try:
+                from StreamJSME import StreamJSME
+                width = available_editor_width()
+                draw_value = StreamJSME(
+                    smiles=st.session_state.get("panura_last_valid_smiles", ""),
+                    width=width, height=350, margin=0,
+                    key="panura_live_editor",
+                )
+                smiles = draw_value.strip() if isinstance(draw_value, str) else ""
+            except (ImportError, OSError) as exc:
+                st.error(f"Sketcher could not load: {exc}")
+                smiles = st.text_input("SMILES", key="panura_editor_fallback").strip()
+
+        mol = parse_smiles(smiles)
+        if mol is not None:
+            st.session_state["panura_last_valid_smiles"] = smiles
+            with st.container():
+                try:
+                    from rdkit.Chem import Draw
+                    st.image(
+                        Draw.MolToImage(mol, size=(520, 300)),
+                        caption="2D molecular structure",
+                        use_container_width=True,
+                    )
+                except (ImportError, OSError, RuntimeError):
+                    st.caption("2D preview unavailable.")
+            m1, m2, m3 = st.columns(3, gap="small")
+            m1.metric("Mol. wt.", f"{Descriptors.MolWt(mol):.1f}")
+            m2.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
+            m3.metric("H-donors", f"{Descriptors.NumHDonors(mol)}")
+        elif smiles:
+            st.caption("Complete a valid molecular structure to see predictions.")
+
+    with results_col:
+        section("02", "Prediction console", "AUTO UPDATE")
+        st.markdown(
+            '<p class="panura-helper">Urease inhibition · QSAR regression outputs</p>',
+            unsafe_allow_html=True,
+        )
+        if mol is None:
+            st.markdown(
+                '<div class="panura-empty"><span class="symbol">⌬</span>'
+                '<strong>Ready for a molecule</strong>'
+                '<p>Draw a structure or enter SMILES. Predictions update without an Apply or Predict button.</p></div>',
+                unsafe_allow_html=True,
+            )
+        elif assets is not None:
+            try:
+                result = cached_prediction(smiles)
+                c1, c2 = st.columns(2, gap="small")
+                c1.metric("Predicted pIC₅₀", f'{result["pic50"]:.3f}')
+                c2.metric("Estimated IC₅₀", f'{result["ic50_um"]:.3g} µM')
+                if result["max_tanimoto"] is not None:
+                    st.metric("Max. training-set Tanimoto", f'{result["max_tanimoto"]:.3f}')
+            except Exception as exc:
+                st.error(f"Prediction error: {exc}")
 
 elif page == "Batch Screening":
-    st.markdown('<div class="workspace-intro"><div class="workspace-kicker">02 / DATASET SCREENING</div><div class="workspace-label">Batch screening</div><div class="workspace-sub">Upload molecular datasets, calculate activities and export results.</div></div>', unsafe_allow_html=True)
-    upload = st.file_uploader("Upload CSV or XLSX containing a SMILES column", type=["csv", "xlsx"])
-    if upload:
+    intro(
+        "02 / DATASET SCREENING",
+        "Batch screening",
+        "Load SMILES, predict activities and download a results table.",
+    )
+    uploaded = st.file_uploader("CSV or Excel file containing SMILES", type=["csv", "xlsx"])
+    if uploaded is not None:
         try:
-            df = pd.read_csv(upload) if upload.name.lower().endswith(".csv") else pd.read_excel(upload)
-            st.dataframe(df.head(20), use_container_width=True)
-            columns = [c for c in df.columns if "smiles" in str(c).lower()]
-            selected = st.selectbox("SMILES column", list(df.columns), index=list(df.columns).index(columns[0]) if columns else 0)
-            if st.button("Run batch predictions", type="primary", disabled=assets is None or len(df) == 0):
-                results = []
-                progress = st.progress(0)
-                for i, smi in enumerate(df[selected]):
-                    try:
-                        value, sim = predict(smi, assets)
-                        results.append({"pIC50_pred": value, "IC50_uM_pred": 10 ** (6-value), "max_tanimoto": sim, "status": "OK"})
-                    except Exception as exc:
-                        results.append({"pIC50_pred": np.nan, "IC50_uM_pred": np.nan, "max_tanimoto": np.nan, "status": str(exc)})
-                    progress.progress((i+1)/len(df))
-                output = pd.concat([df.reset_index(drop=True), pd.DataFrame(results)], axis=1)
-                st.session_state["batch_output"] = output
-                st.session_state["batch_source"] = (upload.name, upload.size, selected)
-            if "batch_output" in st.session_state and st.session_state.get("batch_source") == (upload.name, upload.size, selected):
-                output = st.session_state["batch_output"]
-                st.dataframe(output, use_container_width=True)
-                valid = output.dropna(subset=["pIC50_pred"])
-                if not valid.empty:
-                    st.plotly_chart(px.histogram(valid, x="pIC50_pred", nbins=25, title="Predicted pIC₅₀ distribution"), use_container_width=True)
-                st.download_button("Download predictions (CSV)", output.to_csv(index=False).encode("utf-8"), file_name="PanURA_predictions.csv", mime="text/csv")
+            source_id = hashlib.sha256(uploaded.getvalue()).hexdigest()
+            df = (
+                pd.read_csv(uploaded)
+                if uploaded.name.lower().endswith(".csv")
+                else pd.read_excel(uploaded)
+            )
+            if df.empty or not len(df.columns):
+                st.info("The uploaded dataset is empty.")
+            else:
+                candidates = [c for c in df.columns if "smiles" in str(c).lower()]
+                selected = st.selectbox(
+                    "SMILES column",
+                    list(df.columns),
+                    index=list(df.columns).index(candidates[0]) if candidates else 0,
+                )
+                st.dataframe(df.head(15), use_container_width=True)
+                current_id = (source_id, selected)
+                if st.button("Run Screening", type="primary", disabled=assets is None):
+                    rows = []
+                    progress = st.progress(0)
+                    for i, smi in enumerate(df[selected]):
+                        try:
+                            result = cached_prediction(str(smi))
+                            rows.append({
+                                "pIC50_pred": result["pic50"],
+                                "IC50_uM_pred": result["ic50_um"],
+                                "max_tanimoto": result["max_tanimoto"],
+                                "status": "OK",
+                            })
+                        except Exception as exc:
+                            rows.append({
+                                "pIC50_pred": float("nan"),
+                                "IC50_uM_pred": float("nan"),
+                                "max_tanimoto": float("nan"),
+                                "status": str(exc),
+                            })
+                        progress.progress((i + 1) / len(df))
+                    st.session_state["panura_batch"] = (
+                        current_id,
+                        pd.concat([df.reset_index(drop=True), pd.DataFrame(rows)], axis=1),
+                    )
+                cached_batch = st.session_state.get("panura_batch")
+                if cached_batch is not None and cached_batch[0] == current_id:
+                    output = cached_batch[1]
+                    st.dataframe(output, use_container_width=True)
+                    successful = output.dropna(subset=["pIC50_pred"])
+                    if not successful.empty:
+                        st.plotly_chart(
+                            px.histogram(
+                                successful, x="pIC50_pred", nbins=25,
+                                title="Predicted pIC₅₀ distribution",
+                            ),
+                            use_container_width=True,
+                        )
+                    st.download_button(
+                        "Download predictions (CSV)",
+                        data=output.to_csv(index=False).encode("utf-8"),
+                        file_name="PanURA_predictions.csv",
+                        mime="text/csv",
+                    )
         except Exception as exc:
-            st.error(f"Could not process uploaded data: {exc}")
+            st.error(f"Could not read dataset: {exc}")
+
 else:
-    st.markdown('<div class="workspace-intro"><div class="workspace-kicker">03 / MODEL INFORMATION</div><div class="workspace-label">Model &amp; methods</div><div class="workspace-sub">Dataset characteristics, descriptor engineering and external evaluation.</div></div>', unsafe_allow_html=True)
+    intro(
+        "03 / MODEL INFORMATION",
+        "Model & Methods",
+        "Dataset characteristics, fingerprints and independent evaluation.",
+    )
     a, b, c, d = st.columns(4)
     a.metric("Curated compounds", "351")
-    b.metric("Selected PubChem bits", "142")
+    b.metric("Selected fingerprints", "142")
     c.metric("Reported test R²", "0.782")
     d.metric("Reported test RMSE", "0.493")
-    st.markdown("""**Target:** *Helicobacter pylori* urease inhibitor activity
-
-**Method:** PubChem fingerprint descriptors (881 bits), feature selection, and a LightGBM regression model.
-
-**Reported validation:** Kennard–Stone split (280 training / 71 test); test R² ≈ 0.782, test RMSE ≈ 0.493 pIC₅₀ units.
-
-**Prediction model:** Original CV-selected LightGBM model with 142 selected PubChem fingerprint features.
-
-**Outputs:** Predicted pIC₅₀ and estimated IC₅₀ (µM), with batch export.
-""")
+    st.markdown(
+        "**Target:** *Helicobacter pylori* urease inhibition.\n\n"
+        "**Descriptors:** 881-bit PubChem fingerprints; 142 training-selected bits.\n\n"
+        "**Model:** Original cross-validation-selected LightGBM regressor "
+        "(`Final_Model.pkl`), without re-training or post-selection optimization.\n\n"
+        "**Reported evaluation:** Kennard–Stone 280/71 development/test split; "
+        "test R² ≈ 0.782 and test RMSE ≈ 0.493 pIC₅₀ units.\n\n"
+        "**Predictions:** pIC₅₀ and IC₅₀ in micromolar; optional maximum "
+        "training-set Tanimoto similarity when training fingerprints are available."
+    )
