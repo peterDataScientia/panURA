@@ -35,7 +35,7 @@ Reported research metrics: 351 compounds; 280/71 Kennard–Stone training/test p
 
 **Molecular Prediction:** Choose Draw molecule (StreamJSME) or Enter SMILES. JSME emits SMILES on its drawing-change callback; Python computes predictions on valid structures without an Apply/Predict button. The component measures editor space to choose a width that fits mobile and desktop. pIC₅₀ and estimated IC₅₀ (µM) update automatically when the input changes.
 
-**Batch Screening:** Download a ready-to-use example from `examples/PanURA_example.csv` or `examples/PanURA_example.txt`, or upload your own CSV, TXT or XLSX file. TXT supports one SMILES per line (optionally prefixed by a `SMILES` header); CSV/XLSX files should contain a SMILES column. Choose the SMILES column, run screening, inspect the predictions and export results. Example molecules are for input-format demonstration, not measured inhibition data.
+**Batch Screening:** Download a ready-to-use example from `examples/PanURA_example.csv` or `examples/PanURA_example.txt`, or upload your own CSV, TXT or XLSX file. Example CSV/TXT files contain **ID** and **SMILES** columns. In TXT, these columns are tab-separated; a one-SMILES-per-line TXT file is also supported and receives generated IDs. CSV/XLSX files require a SMILES column; optional user-supplied IDs or Identifiers are preserved verbatim (including leading zeroes). If no identifier is provided, PanURA generates stable `Compound_0001`-style IDs. The identifier remains associated with each molecule through the preview, screening results and downloaded prediction CSV. Example molecules are for input-format demonstration, not measured inhibition data.
 
 **Model & Methods:** Summary of descriptors, model and reported external evaluation.
 
