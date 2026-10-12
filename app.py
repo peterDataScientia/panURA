@@ -48,14 +48,16 @@ def load_predictor():
         return None, f"Could not load model artifacts: {exc}"
 
 def parse_smiles(smiles):
-    mol = Chem.MolFromSmiles(str(smiles).strip()) if pd.notna(smiles) else None
+    if not isinstance(smiles, str) or not smiles.strip():
+        return None
+    mol = Chem.MolFromSmiles(smiles.strip())
     return mol
 
 def predict(smiles, assets):
     mol = parse_smiles(smiles)
     if mol is None:
         raise ValueError("Invalid SMILES")
-    fp = np.asarray(assets["fp"].transform([Chem.MolToSmiles(mol)]), dtype=np.float64)
+    fp = np.asarray(assets["fp"].transform([smiles.strip()]), dtype=np.float64)
     if fp.shape != (1, 881):
         raise ValueError(f"Unexpected fingerprint shape: {fp.shape}")
     x = fp[:, assets["bits"]]
@@ -95,8 +97,9 @@ if page == "Molecular Prediction":
         else:
             try:
                 from streamlit_ketcher import st_ketcher
-                smiles = st_ketcher(value=st.session_state.get("panura_drawing", ""), key="panura_ketcher") or ""
-                st.session_state["panura_drawing"] = smiles
+                smiles = st_ketcher(st.session_state.get("panura_drawing", ""), key="panura_ketcher") or ""
+                if isinstance(smiles, str):
+                    st.session_state["panura_drawing"] = smiles
             except Exception as exc:
                 st.info(f"Sketcher unavailable ({exc}). Paste SMILES instead.")
                 smiles = st.text_input("SMILES", key="fallback_smiles")
@@ -137,7 +140,7 @@ elif page == "Batch Screening":
             st.dataframe(df.head(20), use_container_width=True)
             columns = [c for c in df.columns if "smiles" in str(c).lower()]
             selected = st.selectbox("SMILES column", list(df.columns), index=list(df.columns).index(columns[0]) if columns else 0)
-            if st.button("Run batch predictions", type="primary", disabled=assets is None):
+            if st.button("Run batch predictions", type="primary", disabled=assets is None or len(df) == 0):
                 results = []
                 progress = st.progress(0)
                 for i, smi in enumerate(df[selected]):
@@ -149,7 +152,8 @@ elif page == "Batch Screening":
                     progress.progress((i+1)/len(df))
                 output = pd.concat([df.reset_index(drop=True), pd.DataFrame(results)], axis=1)
                 st.session_state["batch_output"] = output
-            if "batch_output" in st.session_state:
+                st.session_state["batch_source"] = (upload.name, upload.size, selected)
+            if "batch_output" in st.session_state and st.session_state.get("batch_source") == (upload.name, upload.size, selected):
                 output = st.session_state["batch_output"]
                 st.dataframe(output, use_container_width=True)
                 valid = output.dropna(subset=["pIC50_pred"])
