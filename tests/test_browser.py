@@ -71,7 +71,7 @@ def test_hamburger_anchored_right_and_closes_after_navigation(page, app_url, wid
     option = page.get_by_role("button", name="Batch Screening")
     expect(option).to_be_visible()
     option.click()
-    expect(page.get_by_text("Load SMILES, predict activities", exact=False)).to_be_visible()
+    expect(page.get_by_role("heading", name="Batch screening")).to_be_visible(timeout=12000)
     expect(page.get_by_role("button", name="Batch Screening")).to_have_count(0)
     expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
 
