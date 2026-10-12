@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import base64
 import json
 from pathlib import Path
 
@@ -23,22 +24,26 @@ if css_path.exists():
 
 @st.cache_resource
 def load_predictor():
-    model_path = MODEL_DIR / "model.joblib"
-    bits_path = MODEL_DIR / "feature_bits.json"
-    if not model_path.exists() or not bits_path.exists():
-        return None, "Validated model and feature indices have not been uploaded."
+    model_path = MODEL_DIR / "Final_Model.pkl.b64"
+    manifest_path = MODEL_DIR / "Feature_Selection_Manifest.json.b64"
+    if not model_path.exists() or not manifest_path.exists():
+        return None, "Original model or feature manifest is missing."
     try:
-        model = joblib.load(model_path)  # Load only trusted artifacts.
-        bits = json.loads(bits_path.read_text(encoding="utf-8"))
-        if not isinstance(bits, list) or len(bits) != 142 or len(set(bits)) != len(bits) or any(type(i) is not int or i < 0 or i >= 881 for i in bits):
-            raise ValueError("Expected 142 unique, zero-based PubChem bit indices (0–880).")
-        scaler_path = MODEL_DIR / "scaler.joblib"
-        scaler = joblib.load(scaler_path) if scaler_path.exists() else None
+        model = joblib.load(io.BytesIO(base64.b64decode(model_path.read_text(encoding="ascii"))))
+        manifest = json.loads(base64.b64decode(manifest_path.read_text(encoding="ascii")))
+        names = manifest["selected_features"]
+        if len(names) != 142 or len(set(names)) != 142 or any(not name.startswith("PubChem_") for name in names):
+            raise ValueError("Invalid 142-feature training manifest")
+        bits = [int(name.split("_")[1]) for name in names]
+        if any(i < 0 or i >= 881 for i in bits):
+            raise ValueError("PubChem feature index out of range")
+        if getattr(model, "n_features_in_", 142) != 142:
+            raise ValueError("Final model does not expect 142 descriptors")
         train_path = MODEL_DIR / "train_fingerprints.npy"
         train = np.load(train_path, allow_pickle=False) if train_path.exists() else None
         if train is not None and (train.ndim != 2 or train.shape[1] != 881):
-            raise ValueError("Training fingerprints must have 881 columns.")
-        return {"model": model, "bits": bits, "scaler": scaler, "train": train, "fp": PubChemFingerprint()}, None
+            raise ValueError("Training fingerprints must have 881 columns")
+        return {"model": model, "bits": bits, "train": train, "fp": PubChemFingerprint()}, None
     except Exception as exc:
         return None, f"Could not load model artifacts: {exc}"
 
@@ -54,8 +59,6 @@ def predict(smiles, assets):
     if fp.shape != (1, 881):
         raise ValueError(f"Unexpected fingerprint shape: {fp.shape}")
     x = fp[:, assets["bits"]]
-    if assets["scaler"] is not None:
-        x = assets["scaler"].transform(x)
     value = float(assets["model"].predict(x)[0])
     if not np.isfinite(value):
         raise ValueError("Non-finite prediction")
@@ -164,7 +167,7 @@ else:
 
 **Reported validation:** Kennard–Stone split (280 training / 71 test); test R² ≈ 0.782, test RMSE ≈ 0.493 pIC₅₀ units.
 
-**Deployment status:** The training artifacts must be uploaded and checked for identical feature ordering and preprocessing before enabling predictions. These validation metrics describe the research model, not a newly validated deployment.
+**Deployment status:** The original CV-selected Final_Model.pkl and 142-bit training feature manifest are installed. No optimized model is used. Deployment predictions still require independent verification against the saved test predictions. These validation metrics describe the research model, not a newly validated deployment.
 
 **Applicability domain:** Similarity is an exploratory diagnostic; leverage requires the fitted training feature matrix or a validated AD reference. No query-only leverage formula is used.
 
