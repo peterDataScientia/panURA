@@ -1,0 +1,89 @@
+"""Playwright end-to-end checks for responsive navigation on Streamlit."""
+from __future__ import annotations
+
+import os
+import socket
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+import pytest
+from playwright.sync_api import expect
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture(scope="session")
+def app_url():
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    env = dict(os.environ, STREAMLIT_SERVER_HEADLESS="true")
+    process = subprocess.Popen(
+        [
+            sys.executable, "-m", "streamlit", "run", str(ROOT / "app.py"),
+            f"--server.port={port}", "--server.address=127.0.0.1",
+            "--browser.gatherUsageStats=false",
+        ],
+        cwd=ROOT,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    url = f"http://127.0.0.1:{port}"
+    try:
+        for _ in range(100):
+            if process.poll() is not None:
+                raise RuntimeError("Streamlit exited before becoming healthy")
+            try:
+                with urllib.request.urlopen(url + "/_stcore/health", timeout=1) as response:
+                    if response.read().decode().strip() == "ok":
+                        break
+            except (OSError, urllib.error.URLError):
+                time.sleep(.2)
+        else:
+            raise RuntimeError("Streamlit health endpoint never became available")
+        yield url
+    finally:
+        process.terminate()
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            process.kill()
+
+
+@pytest.mark.parametrize("width,height", [(360, 780), (390, 844), (768, 1024), (980, 760), (1440, 900)])
+def test_hamburger_anchored_right_and_closes_after_navigation(page, app_url, width, height):
+    page.set_viewport_size({"width": width, "height": height})
+    page.goto(app_url)
+    trigger = page.get_by_role("button", name="Open navigation menu")
+    expect(trigger).to_be_visible(timeout=30000)
+    coords = trigger.bounding_box()
+    assert coords is not None
+    # The control must remain within the browser viewport at all tested widths.
+    assert 0 <= coords["x"]
+    assert coords["x"] + coords["width"] <= width + 2
+
+    trigger.click()
+    option = page.get_by_role("button", name="Batch Screening")
+    expect(option).to_be_visible()
+    option.click()
+    expect(page.get_by_text("Load SMILES, predict activities")).to_be_visible()
+    expect(page.get_by_role("button", name="Batch Screening")).to_have_count(0)
+    expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
+
+
+def test_menu_escape_and_outside_click(page, app_url):
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(app_url)
+    page.get_by_role("button", name="Open navigation menu").click()
+    expect(page.get_by_role("button", name="Model & Methods")).to_be_visible()
+    page.keyboard.press("Escape")
+    expect(page.get_by_role("button", name="Model & Methods")).to_have_count(0)
+
+    page.get_by_role("button", name="Open navigation menu").click()
+    page.get_by_text("Molecular prediction workspace").click()
+    expect(page.get_by_role("button", name="Model & Methods")).to_have_count(0)
