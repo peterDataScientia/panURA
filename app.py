@@ -161,11 +161,6 @@ if page == "Molecular Prediction":
                     st.caption("2D structure preview unavailable.")
 
 elif page == "Batch Screening":
-    intro(
-        "02 / DATASET SCREENING",
-        "Batch screening",
-        "Load SMILES, predict activities and download a results table.",
-    )
     uploaded = st.file_uploader("CSV or Excel file containing SMILES", type=["csv", "xlsx"])
     if uploaded is not None:
         try:
