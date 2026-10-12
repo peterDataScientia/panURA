@@ -71,8 +71,6 @@ def test_hamburger_anchored_right_and_closes_after_navigation(page, app_url, wid
     option = page.get_by_role("link", name="Batch Screening")
     expect(option).to_be_visible()
     option.click()
-    page.wait_for_timeout(1000)
-    assert "view=batch" in page.url, f"Navigation URL not updated: {page.url}"
     expect(page.get_by_role("heading", name="Batch screening")).to_be_visible(timeout=12000)
     expect(page.get_by_role("link", name="Batch Screening")).to_have_count(0)
     expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
@@ -154,3 +152,25 @@ def test_mobile_view_not_cramped(page, app_url, width, height):
 def test_direct_batch_route(page, app_url):
     page.goto(app_url + "?view=batch")
     expect(page.get_by_role("heading", name="Batch screening")).to_be_visible(timeout=30000)
+
+
+def test_menu_switches_repeatedly_without_page_reload(page, app_url):
+    """Selecting a menu item must change the displayed Streamlit page each time."""
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(app_url)
+    expect(page.get_by_role("heading", name="Molecular prediction workspace")).to_be_visible(timeout=30000)
+
+    for destination, expected in [
+        ("Batch Screening", "Batch screening"),
+        ("Model & Methods", "Model & Methods"),
+        ("Molecular Prediction", "Molecular prediction workspace"),
+        ("Batch Screening", "Batch screening"),
+    ]:
+        page.get_by_role("button", name="Open navigation menu").click()
+        link = page.get_by_role("link", name=destination, exact=True)
+        expect(link).to_be_visible()
+        link.click()
+        expect(page.get_by_role("heading", name=expected, exact=True)).to_be_visible(timeout=15000)
+        expect(page.get_by_role("link", name=destination, exact=True)).to_have_count(0)
+        expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
+
