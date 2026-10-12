@@ -234,6 +234,6 @@ def test_small_batch_shows_molecule_chart_not_fixed_25_bin_histogram(page, app_u
     figure = chart.locator(".js-plotly-plot").first
     expect(figure).to_be_visible(timeout=15000)
     trace_info = figure.evaluate(
-        "(el) => el.data.map(t => ({type: t.type, count: t.x.length}))"
+        "(el) => el.data.map((t, i) => ({type: t.type, count: el.calcdata[i].length}))"
     )
     assert trace_info == [{"type": "scatter", "count": 6}], trace_info
