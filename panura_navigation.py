@@ -62,9 +62,14 @@ export default function({parentElement, data}) {
         const selected = link.getAttribute("data-page");
         if (selected === data.page) link.setAttribute("aria-current", "page");
         else link.removeAttribute("aria-current");
-        link.onclick = () => {
+        link.onclick = (event) => {
+            event.preventDefault();
             close();
-            // Normal URL navigation is deliberate: reliable on all mobile browsers.
+            // Force a top-level navigation rather than relying on an anchor
+            // default action from inside a Streamlit component shadow tree.
+            const target = new URL(window.location.href);
+            target.searchParams.set("view", selected);
+            window.location.assign(target.toString());
         };
     }
     const outside = (event) => {
