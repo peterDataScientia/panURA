@@ -71,7 +71,7 @@ def test_hamburger_anchored_right_and_closes_after_navigation(page, app_url, wid
     option = page.get_by_role("link", name="Batch Screening")
     expect(option).to_be_visible()
     option.click()
-    expect(page.get_by_role("heading", name="Batch screening")).to_be_visible(timeout=12000)
+    expect(page.get_by_text("CSV or Excel file containing SMILES", exact=True)).to_be_visible(timeout=12000)
     expect(page.get_by_role("link", name="Batch Screening")).to_have_count(0)
     expect(page.get_by_role("button", name="Open navigation menu")).to_be_visible()
 
@@ -151,7 +151,7 @@ def test_mobile_view_not_cramped(page, app_url, width, height):
 
 def test_direct_batch_route(page, app_url):
     page.goto(app_url + "?view=batch")
-    expect(page.get_by_role("heading", name="Batch screening")).to_be_visible(timeout=30000)
+    expect(page.get_by_text("CSV or Excel file containing SMILES", exact=True)).to_be_visible(timeout=30000)
 
 
 def test_menu_switches_repeatedly_without_page_reload(page, app_url):
@@ -161,10 +161,10 @@ def test_menu_switches_repeatedly_without_page_reload(page, app_url):
     expect(page.get_by_text("Molecular editor", exact=True)).to_be_visible(timeout=30000)
 
     for destination, expected in [
-        ("Batch Screening", "Batch screening"),
+        ("Batch Screening", "CSV or Excel file containing SMILES"),
         ("Model & Methods", "Model & Methods"),
         ("Molecular Prediction", "Molecular editor"),
-        ("Batch Screening", "Batch screening"),
+        ("Batch Screening", "CSV or Excel file containing SMILES"),
     ]:
         page.get_by_role("button", name="Open navigation menu").click()
         link = page.get_by_role("link", name=destination, exact=True)
