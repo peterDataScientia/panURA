@@ -183,7 +183,7 @@ elif page == "Batch Screening":
     uploaded = st.file_uploader(
         "Upload CSV, TXT or Excel file containing SMILES",
         type=["csv", "txt", "xlsx"],
-        help="TXT: one SMILES per line. CSV/XLSX: a table with a SMILES column.",
+        help="TXT: ID and SMILES separated by tab, or one SMILES per line. CSV/XLSX: SMILES column, optional ID.",
     )
     if uploaded is not None:
         try:
@@ -192,15 +192,24 @@ elif page == "Batch Screening":
             if df.empty or not len(df.columns):
                 st.info("The uploaded dataset is empty.")
             else:
-                candidates = [c for c in df.columns if "smiles" in str(c).lower()]
-                if len(df.columns) == 1:
-                    selected = df.columns[0]
+                # The identifier is metadata, never the QSAR input column.
+                id_headers = {"id", "identifier", "compound_id", "molecule_id", "sample_id", "compoundid"}
+                molecule_columns = [
+                    c for c in df.columns
+                    if str(c).strip().casefold() not in id_headers
+                ]
+                candidates = [
+                    c for c in molecule_columns
+                    if "smiles" in str(c).strip().casefold()
+                ]
+                if len(candidates) == 1 or len(molecule_columns) == 1:
+                    selected = candidates[0] if candidates else molecule_columns[0]
                     st.caption(f"SMILES column: {selected}")
                 else:
                     selected = st.selectbox(
                         "SMILES column",
-                        list(df.columns),
-                        index=list(df.columns).index(candidates[0]) if candidates else 0,
+                        molecule_columns,
+                        index=molecule_columns.index(candidates[0]) if candidates else 0,
                     )
                 st.dataframe(df.head(15), use_container_width=True)
                 current_id = (source_id, selected)
