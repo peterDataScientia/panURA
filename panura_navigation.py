@@ -6,7 +6,7 @@ from pathlib import Path
 
 import streamlit as st
 
-PAGES = ("Molecular Prediction", "Batch Screening", "Model & Methods")
+PAGES = {"molecular": "Molecular Prediction", "batch": "Batch Screening", "methods": "Model & Methods"}
 
 NAV_HTML = """
 <div class="panura-shell">
@@ -17,9 +17,9 @@ NAV_HTML = """
     </button>
   </header>
   <nav id="panura-nav-links" class="panura-menu" aria-label="Main navigation" hidden>
-    <button type="button" data-page="Molecular Prediction">Molecular Prediction</button>
-    <button type="button" data-page="Batch Screening">Batch Screening</button>
-    <button type="button" data-page="Model &amp; Methods">Model &amp; Methods</button>
+    <a href="?view=molecular" data-page="molecular">Molecular Prediction</a>
+    <a href="?view=batch" data-page="batch">Batch Screening</a>
+    <a href="?view=methods" data-page="methods">Model &amp; Methods</a>
   </nav>
 </div>
 """
@@ -32,19 +32,19 @@ NAV_CSS = """
 button:focus-visible{outline:3px solid #34c8ba;outline-offset:3px}
 .panura-menu{margin:4px 0 10px auto;box-sizing:border-box;width:min(320px,100%);padding:9px;display:grid;gap:5px;border:1px solid #d8e5ef;border-radius:14px;background:#fff;box-shadow:0 12px 30px #0c27472c}
 .panura-menu[hidden]{display:none}
-.panura-menu button{width:100%;text-align:left;background:#fff;border:0;border-radius:9px;padding:12px 13px;min-height:46px;color:#183459;font-weight:650;cursor:pointer;font-size:14px}
-.panura-menu button:hover,.panura-menu button:focus-visible{background:#e8f5f5;color:#066d70}
-.panura-menu button[aria-current="page"]{background:#e2f3f3;border-left:3px solid #159d99}
+.panura-menu a{display:block;box-sizing:border-box;text-decoration:none;width:100%;text-align:left;background:#fff;border:0;border-radius:9px;padding:12px 13px;min-height:46px;color:#183459;font-weight:650;cursor:pointer;font-size:14px}
+.panura-menu a:hover,.panura-menu a:focus-visible{background:#e8f5f5;color:#066d70}
+.panura-menu a[aria-current="page"]{background:#e2f3f3;border-left:3px solid #159d99}
 @media(max-width:480px){.panura-bar{min-height:66px}.panura-logo{max-width:min(195px,calc(100% - 102px));max-height:64px}.panura-toggle{min-height:44px;min-width:91px;padding:8px 10px;font-size:13px}}
 @media(prefers-reduced-motion:no-preference){.panura-menu{animation:panura-open .16s ease-out}@keyframes panura-open{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}}
 """
 NAV_JS = """
-export default function({parentElement, data, setStateValue}) {
+export default function({parentElement, data}) {
     const root = parentElement.querySelector(".panura-shell");
     const logo = root.querySelector(".panura-logo");
     const toggle = root.querySelector(".panura-toggle");
     const menu = root.querySelector(".panura-menu");
-    const links = [...menu.querySelectorAll("button[data-page]")];
+    const links = [...menu.querySelectorAll("a[data-page]")];
     logo.src = data.logo;
     const close = (restoreFocus = false) => {
         menu.hidden = true;
@@ -64,7 +64,7 @@ export default function({parentElement, data, setStateValue}) {
         else link.removeAttribute("aria-current");
         link.onclick = () => {
             close();
-            setStateValue("page", selected);
+            // Normal URL navigation is deliberate: reliable on all mobile browsers.
         };
     }
     const outside = (event) => {
@@ -128,27 +128,21 @@ width_component = st.components.v2.component(
 )
 
 
-def _sync_selected_page() -> None:
-    """Persist the choice during the component callback, before a new rerun."""
-    state = st.session_state.get("panura_header", {})
-    selected = state.get("page") if isinstance(state, dict) else getattr(state, "page", None)
-    if selected in PAGES:
-        st.session_state.panura_page = selected
-
-
 def render_navigation(logo_path: Path) -> str:
-    st.session_state.setdefault("panura_page", PAGES[0])
+    """Render accessible top-right menu with bookmarkable page links.
+
+    Real browser navigation avoids transient Streamlit v2 component events
+    that can be lost during reruns of the surrounding molecular editor.
+    """
+    section = str(st.query_params.get("view", "molecular")).lower()
+    if section not in PAGES:
+        section = "molecular"
     logo_data = base64.b64encode(Path(logo_path).read_bytes()).decode("ascii")
-    result = navigation_component(
-        data={"logo": "data:image/svg+xml;base64," + logo_data,
-              "page": st.session_state.panura_page},
-        default={"page": st.session_state.panura_page},
+    navigation_component(
+        data={"logo": "data:image/svg+xml;base64," + logo_data, "page": section},
         key="panura_header", width="stretch", height="content",
-        on_page_change=_sync_selected_page,
     )
-    if result.page in PAGES:
-        st.session_state.panura_page = result.page
-    return st.session_state.panura_page
+    return PAGES[section]
 
 
 def available_editor_width() -> int:
