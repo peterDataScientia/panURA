@@ -77,23 +77,25 @@ if "panura_menu_open" not in st.session_state:
     st.session_state.panura_menu_open = False
 
 st.markdown('<div class="top-accent"></div>', unsafe_allow_html=True)
-nav_logo, nav_menu = st.columns([8, 2], gap="small", vertical_alignment="center")
-with nav_logo:
-    st.image(str(ROOT / "assets" / "panura-logo.svg"), width=260)
-with nav_menu:
-    if st.button("☰ Menu", key="panura_menu_toggle", use_container_width=True):
-        st.session_state.panura_menu_open = not st.session_state.panura_menu_open
-        st.rerun()
+with st.container(key="panura_top_nav"):
+    nav_logo, nav_menu = st.columns([8, 2], gap="small", vertical_alignment="center")
+    with nav_logo:
+        st.image(str(ROOT / "assets" / "panura-logo.svg"), width=240)
+    with nav_menu:
+        if st.button("☰ Menu", key="panura_menu_toggle", use_container_width=True):
+            st.session_state.panura_menu_open = not st.session_state.panura_menu_open
+            st.rerun()
 
 if st.session_state.panura_menu_open:
-    nav_spacer, nav_options = st.columns([7, 3], gap="small")
-    with nav_options:
-        with st.container(border=True):
-            for option in ("Molecular Prediction", "Batch Screening", "Model & Methods"):
-                if st.button(option, key=f"panura_nav_{option}", use_container_width=True):
-                    st.session_state.panura_current_page = option
-                    st.session_state.panura_menu_open = False
-                    st.rerun()
+    with st.container(key="panura_menu_panel"):
+        nav_spacer, nav_options = st.columns([7, 3], gap="small")
+        with nav_options:
+            with st.container(border=True):
+                for option in ("Molecular Prediction", "Batch Screening", "Model & Methods"):
+                    if st.button(option, key=f"panura_nav_{option}", use_container_width=True):
+                        st.session_state.panura_current_page = option
+                        st.session_state.panura_menu_open = False
+                        st.rerun()
 
 page = st.session_state.panura_current_page
 
@@ -103,7 +105,7 @@ if model_error:
 
 if page == "Molecular Prediction":
     st.markdown('<div class="workspace-intro"><div class="workspace-kicker">01 / LIVE SCREENING</div><div class="workspace-label">Molecular prediction workspace</div><div class="workspace-sub">Draw, explore and evaluate molecular activity in one continuous workflow.</div></div>', unsafe_allow_html=True)
-    left, right = st.columns([1.16, 1], gap="large")
+    left, right = st.columns([1.16, 1], gap="large", vertical_alignment="top")
     with left:
         st.markdown('<div class="panel-heading"><span class="panel-index">01</span> Molecular editor <span class="panel-tag">LIVE INPUT</span></div>', unsafe_allow_html=True)
         # HematoAI-style single-sketch input: edited JSME structure drives reruns.
@@ -122,7 +124,7 @@ if page == "Molecular Prediction":
         if mol is not None:
             try:
                 from rdkit.Chem import Draw
-                st.image(Draw.MolToImage(mol, size=(520, 300)), caption="RDKit 2D molecular structure")
+                st.image(Draw.MolToImage(mol, size=(520, 300)), caption="RDKit 2D molecular structure", use_container_width=True)
             except (ImportError, OSError, RuntimeError) as drawing_error:
                 st.caption("2D structure preview could not be rendered.")
             a, b, c = st.columns(3)
