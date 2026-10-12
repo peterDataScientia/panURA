@@ -89,19 +89,16 @@ if page == "Molecular Prediction":
     st.markdown('<div class="panel-heading">Molecular prediction workspace</div>', unsafe_allow_html=True)
     left, right = st.columns([1, 1], gap="large")
     with left:
-        mode = st.radio("Molecule input", ["SMILES", "Draw molecule"], horizontal=True)
-        smiles = ""
-        if mode == "SMILES":
-            smiles = st.text_input("Canonical or isomeric SMILES", placeholder="Paste a valid SMILES")
-        else:
-            try:
-                from streamlit_ketcher import st_ketcher
-                smiles = st_ketcher(st.session_state.get("panura_drawing", ""), key="panura_ketcher") or ""
-                if isinstance(smiles, str):
-                    st.session_state["panura_drawing"] = smiles
-            except Exception as exc:
-                st.info(f"Sketcher unavailable ({exc}). Paste SMILES instead.")
-                smiles = st.text_input("SMILES", key="fallback_smiles")
+        # HematoAI-style single-sketch input: edited JSME structure drives reruns.
+        # The component returns SMILES automatically; no Apply/Predict action.
+        entered_smiles = st.text_input(
+            "Enter SMILES",
+            key="panura_smiles_input",
+            placeholder="Enter SMILES or draw a molecule below",
+        )
+        from StreamJSME import StreamJSME
+        drawn_smiles = StreamJSME(smiles=entered_smiles if entered_smiles else "")
+        smiles = drawn_smiles if isinstance(drawn_smiles, str) and drawn_smiles.strip() else entered_smiles
         mol = parse_smiles(smiles) if smiles else None
         if smiles and mol is None:
             st.error("SMILES could not be parsed.")
