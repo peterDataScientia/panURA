@@ -17,7 +17,7 @@ from skfp.fingerprints import PubChemFingerprint
 
 ROOT = Path(__file__).resolve().parent
 MODEL_DIR = ROOT / "models"
-st.set_page_config(page_title="PanURA | Urease QSAR", page_icon="🧬", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="PanURA | Urease QSAR", page_icon="🧬", layout="wide", initial_sidebar_state="collapsed")
 css_path = ROOT / "styles.css"
 if css_path.exists():
     st.markdown("<style>" + css_path.read_text(encoding="utf-8") + "</style>", unsafe_allow_html=True)
@@ -72,15 +72,16 @@ def predict(smiles, assets):
     return value, similarity
 
 st.markdown('<div class="top-accent"></div>', unsafe_allow_html=True)
-st.image(str(ROOT / "assets" / "panura-logo.svg"), width=300)
-
-
-with st.sidebar:
-    st.image(str(ROOT / "assets" / "panura-logo.svg"), use_container_width=True)
-    page = st.radio("Workspace", ["Molecular Prediction", "Batch Screening", "Model & Methods"], label_visibility="collapsed")
-    st.divider()
-
-
+nav_logo, nav_menu = st.columns([9, 1], gap="small", vertical_alignment="center")
+with nav_logo:
+    st.image(str(ROOT / "assets" / "panura-logo.svg"), width=260)
+with nav_menu:
+    with st.popover("☰ Menu", use_container_width=True):
+        page = st.radio(
+            "Navigate to",
+            ["Molecular Prediction", "Batch Screening", "Model & Methods"],
+            key="panura_current_page",
+        )
 
 assets, model_error = load_predictor()
 if model_error:
