@@ -94,8 +94,9 @@ if page == "Molecular Prediction":
             smiles = st.text_input("Canonical or isomeric SMILES", placeholder="Paste a valid SMILES")
         else:
             try:
-                from streamjsme import st_jsme
-                smiles = st_jsme("panura_sketcher", height=360) or ""
+                from streamlit_ketcher import st_ketcher
+                smiles = st_ketcher(value=st.session_state.get("panura_drawing", ""), key="panura_ketcher") or ""
+                st.session_state["panura_drawing"] = smiles
             except Exception as exc:
                 st.info(f"Sketcher unavailable ({exc}). Paste SMILES instead.")
                 smiles = st.text_input("SMILES", key="fallback_smiles")
