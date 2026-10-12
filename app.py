@@ -78,7 +78,7 @@ with st.sidebar:
     st.image(str(ROOT / "assets" / "panura-logo.svg"), use_container_width=True)
     page = st.radio("Workspace", ["Molecular Prediction", "Batch Screening", "Model & Methods"], label_visibility="collapsed")
     st.divider()
-    st.caption("PubChem fingerprints · QSAR regression · Structure-aware screening")
+
 
 
 assets, model_error = load_predictor()
