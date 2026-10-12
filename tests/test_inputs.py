@@ -42,15 +42,15 @@ def test_unsupported_extension_is_rejected():
 
 
 def test_csv_preserves_leading_zeros():
-    df = read_screening_file("screen.csv", b"ID,SMILES\\n00035,CCO\\n00036,CCC\\n")
+    df = read_screening_file("screen.csv", b"ID,SMILES\n00035,CCO\n00036,CCC\n")
     assert df.ID.tolist() == ["00035", "00036"]
 
 
 def test_single_column_csv_gets_stable_ids():
-    df = read_screening_file("screen.csv", b"SMILES\\nCCO\\nCCC\\n")
+    df = read_screening_file("screen.csv", b"SMILES\nCCO\nCCC\n")
     assert df.ID.tolist() == ["Compound_0001", "Compound_0002"]
 
 
 def test_identifier_field_preserved():
-    df = read_screening_file("screen.csv", b"Identifier,SMILES\\nLAB1,CCO\\nLAB2,CCC\\n")
+    df = read_screening_file("screen.csv", b"Identifier,SMILES\nLAB1,CCO\nLAB2,CCC\n")
     assert df.Identifier.tolist() == ["LAB1", "LAB2"]
