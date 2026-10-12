@@ -12,7 +12,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from rdkit import Chem, DataStructs
-from rdkit.Chem import Descriptors, Draw
+from rdkit.Chem import Descriptors
 from skfp.fingerprints import PubChemFingerprint
 
 ROOT = Path(__file__).resolve().parent
@@ -102,7 +102,12 @@ if page == "Molecular Prediction":
         if smiles and mol is None:
             st.error("SMILES could not be parsed.")
         if mol is not None:
-            st.image(Draw.MolToImage(mol, size=(520, 300)), caption="RDKit 2D molecular structure")
+            try:
+                from rdkit.Chem import Draw
+                st.image(Draw.MolToImage(mol, size=(520, 300)), caption="RDKit 2D molecular structure")
+            except (ImportError, OSError, RuntimeError) as drawing_error:
+                st.warning("2D rendering is unavailable in this environment; molecular prediction remains accessible.")
+                st.caption(str(drawing_error))
             a, b, c = st.columns(3)
             a.metric("Molecular weight", f"{Descriptors.MolWt(mol):.1f}")
             b.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
