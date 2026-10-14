@@ -120,13 +120,18 @@ if page == "Molecular Prediction":
                 )
                 if isinstance(draw_value, str):
                     drawn = draw_value.strip()
-                    # Some JSME builds return an empty value before a seeded
-                    # canvas has initialized. Do not erase the pasted molecule.
-                    initial_empty = bool(
-                        not drawn and st.session_state["panura_editor_seed"]
-                        and not st.session_state["panura_editor_initialized"]
+                    # JSME may emit its default carbon (C) before it has
+                    # applied a newly pasted/loaded molecule. Wait for a
+                    # chemically equivalent seed before trusting callbacks.
+                    seed = st.session_state["panura_editor_seed"]
+                    seed_mol, draw_mol = parse_smiles(seed), parse_smiles(drawn)
+                    seed_unconfirmed = bool(
+                        seed and not st.session_state["panura_editor_initialized"]
+                        and (seed_mol is None or draw_mol is None or
+                             Chem.MolToSmiles(seed_mol, isomericSmiles=True) !=
+                             Chem.MolToSmiles(draw_mol, isomericSmiles=True))
                     )
-                    if not initial_empty:
+                    if not seed_unconfirmed:
                         st.session_state["panura_editor_initialized"] = True
                         if drawn != st.session_state["panura_editor_last_emitted"]:
                             st.session_state["panura_editor_last_emitted"] = drawn
