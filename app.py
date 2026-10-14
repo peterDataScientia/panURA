@@ -132,8 +132,9 @@ if page == "Molecular Prediction":
                             st.session_state["panura_editor_last_emitted"] = drawn
                             st.session_state["panura_active_smiles"] = drawn
                             if drawn != st.session_state["panura_manual_smiles"]:
+                                # Sync the editable SMILES field on the next natural
+                                # event; avoid an extra rerun that remounts JSME.
                                 st.session_state["panura_pending_smiles_sync"] = drawn
-                                st.rerun()
             except (ImportError, OSError) as exc:
                 st.warning(f"Interactive editor unavailable: {exc}")
             st.button("Clear structure", key="panura_clear_structure", on_click=load_structure_into_editor, args=("",))
