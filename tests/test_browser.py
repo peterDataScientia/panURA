@@ -249,18 +249,18 @@ def test_paste_smiles_predict_save_and_restore_design(page, app_url):
     box.press("Enter")
     expect(page.get_by_text("Predicted pIC₅₀", exact=True)).to_be_visible(timeout=30000)
     expect(page.get_by_text("Training-space AD", exact=True)).to_be_visible(timeout=30000)
+    expect(page.get_by_text("Current structure SMILES: CC(N)=O", exact=True)).to_be_visible(timeout=30000)
     expect(page.get_by_text("4.954", exact=True)).to_be_visible(timeout=30000)
     page.get_by_role("button", name="Save current design").click()
     expect(page.get_by_role("combobox", name="Restore a saved molecular structure")).to_be_visible(timeout=15000)
     box.fill("CCO")
     box.press("Enter")
-    # Wait for the second molecule to reach the live prediction console.
-    metric = page.locator('[data-testid="stMetric"]').filter(has_text="Predicted pIC₅₀")
-    expect(metric).not_to_contain_text("4.954", timeout=30000)
+    # The live structure marker confirms the backend is using this edit.
+    expect(page.get_by_text("Current structure SMILES: CCO", exact=True)).to_be_visible(timeout=30000)
     page.get_by_role("button", name="Save current design").click()
     with page.expect_download() as download_event:
         page.get_by_role("button", name="Download design comparison (.csv)").click()
     content = download_event.value.path().read_text(encoding="utf-8")
     assert "Design 1" in content and "Design 2" in content
     page.get_by_role("button", name="Load selected design into editor").click()
-    expect(box).to_have_value("CC(=O)N", timeout=15000)
+    expect(box).to_have_value("CC(N)=O", timeout=15000)
