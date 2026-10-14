@@ -352,6 +352,7 @@ elif page == "Batch Screening":
                 if cached_batch is not None and cached_batch[0] == current_id:
                     output = cached_batch[1]
                     st.dataframe(output, use_container_width=True, hide_index=True)
+                    st.caption("AD uses original training-set P95 leverage. Selected-bit Tanimoto is a supplementary proximity score, not an AD probability.")
                     if not similarity_available:
                         st.caption("Maximum Tanimoto is not shown: the original training fingerprints have not been supplied.")
                     successful = prepare_activity_data(output)
