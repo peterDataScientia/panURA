@@ -426,6 +426,7 @@ else:
         "(`Final_Model.pkl`), without re-training or post-selection optimization.\n\n"
         "**Reported evaluation:** Kennard–Stone 280/71 development/test split; "
         "test R² ≈ 0.782 and test RMSE ≈ 0.493 pIC₅₀ units.\n\n"
-        "**Predictions:** pIC₅₀ and IC₅₀ in micromolar; optional maximum "
-        "training-set Tanimoto similarity when training fingerprints are available."
+        "**Predictions:** pIC₅₀, IC₅₀ in micromolar, and original training-set "
+        "P95 leverage AD, with selected-fingerprint Tanimoto reported separately. "
+        "A new molecule has no experimental residual, so residual-based AD is not applicable."
     )
