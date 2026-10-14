@@ -210,23 +210,39 @@ if page == "Molecular Prediction":
         "Predicted improvements are hypotheses, not confirmed experimental optimization."
     )
     history = st.session_state["panura_design_history"]
-    if st.button("Save current design", disabled=result is None, key="panura_save_design"):
-        canonical = Chem.MolToSmiles(mol, isomericSmiles=True)
-        if any(item["Canonical_SMILES"] == canonical for item in history):
-            st.info("This chemical structure has already been saved.")
-        else:
-            history.append({
-                "Design": f"Design {len(history) + 1}",
-                "SMILES": smiles,
-                "Canonical_SMILES": canonical,
-                "Predicted_pIC50": round(result["pic50"], 4),
-                "Estimated_IC50_uM": round(result["ic50_um"], 5),
-                "AD": ("Inside" if result["ad_inside"] else "Outside")
-                      if result.get("ad_inside") is not None else "Unavailable",
-                "Leverage": round(result["leverage"], 5)
-                            if result.get("leverage") is not None else None,
-            })
-            st.success("Design saved. The first saved design is the comparison reference.")
+
+    def save_current_design():
+        # A widget callback runs before Streamlit reconstructs the page.
+        # Recalculate from the current structure so saved values never refer
+        # to an outdated screen or an earlier asynchronous editor event.
+        current = st.session_state.get("panura_active_smiles", "").strip()
+        current_mol = parse_smiles(current)
+        if current_mol is None or assets is None:
+            st.session_state["panura_design_notice"] = "No valid molecule to save."
+            return
+        actual = cached_prediction(current)
+        canonical = Chem.MolToSmiles(current_mol, isomericSmiles=True)
+        records = st.session_state["panura_design_history"]
+        if any(item["Canonical_SMILES"] == canonical for item in records):
+            st.session_state["panura_design_notice"] = "This design is already saved."
+            return
+        records.append({
+            "Design": f"Design {len(records) + 1}",
+            "SMILES": current,
+            "Canonical_SMILES": canonical,
+            "Predicted_pIC50": round(actual["pic50"], 4),
+            "Estimated_IC50_uM": round(actual["ic50_um"], 5),
+            "AD": ("Inside" if actual["ad_inside"] else "Outside")
+                  if actual.get("ad_inside") is not None else "Unavailable",
+            "Leverage": round(actual["leverage"], 5)
+                        if actual.get("leverage") is not None else None,
+        })
+        st.session_state["panura_design_notice"] = "Design saved."
+
+    st.button("Save current design", disabled=result is None,
+              key="panura_save_design", on_click=save_current_design)
+    if st.session_state.get("panura_design_notice"):
+        st.caption(st.session_state["panura_design_notice"])
     if history:
         base = history[0]["Predicted_pIC50"]
         comparison = pd.DataFrame(history)
