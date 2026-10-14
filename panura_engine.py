@@ -63,7 +63,12 @@ def load_assets(model_dir: Path) -> PredictorAssets:
             raise ValueError("Training fingerprints must have 881 columns.")
         training = np.asarray(training, dtype=bool)
     ad_path = model_dir / "ad_reference.json"
-    ad = load_leverage_domain(ad_path, names) if ad_path.exists() else None
+    if not ad_path.is_file():
+        raise FileNotFoundError(
+            f"Required applicability-domain reference is missing: {ad_path}. "
+            "The original training descriptor matrix must be available before screening."
+        )
+    ad = load_leverage_domain(ad_path, names)
     return PredictorAssets(model, indices, PubChemFingerprint(), training, ad)
 
 
