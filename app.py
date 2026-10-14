@@ -100,7 +100,7 @@ if page == "Molecular Prediction":
     editor_col, results_col = st.columns([1.18, 1], gap="large", vertical_alignment="top")
     with editor_col:
         with st.container(key="panura_editor_column"):
-            section("01", "Molecular design workspace", "LIVE EDITING")
+            section("01", "Molecular editor", "LIVE DESIGN")
             st.text_input(
                 "Paste SMILES to display and edit its molecular structure",
                 key="panura_manual_smiles",
