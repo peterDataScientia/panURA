@@ -265,7 +265,7 @@ if page == "Molecular Prediction":
                 "Download design comparison (.csv)",
                 comparison.to_csv(index=False).encode("utf-8"),
                 file_name="PanURA_design_comparison.csv", mime="text/csv",
-                key="panura_design_export",
+                on_click="ignore", key="panura_design_export",
             )
 
 elif page == "Batch Screening":
