@@ -140,6 +140,8 @@ if page == "Molecular Prediction":
             st.button("Clear structure", key="panura_clear_structure", on_click=load_structure_into_editor, args=("",))
             smiles = st.session_state["panura_active_smiles"]
             mol = parse_smiles(smiles)
+            if mol is not None:
+                st.caption(f"Current structure SMILES: {Chem.MolToSmiles(mol, isomericSmiles=True)}")
             if smiles and mol is None:
                 st.caption("Complete the molecular structure to calculate activity.")
 
