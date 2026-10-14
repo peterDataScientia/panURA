@@ -136,9 +136,7 @@ if page == "Molecular Prediction":
                                 st.rerun()
             except (ImportError, OSError) as exc:
                 st.warning(f"Interactive editor unavailable: {exc}")
-            if st.button("Clear structure", key="panura_clear_structure"):
-                load_structure_into_editor("")
-                st.rerun()
+            st.button("Clear structure", key="panura_clear_structure", on_click=load_structure_into_editor, args=("",))
             smiles = st.session_state["panura_active_smiles"]
             mol = parse_smiles(smiles)
             if smiles and mol is None:
