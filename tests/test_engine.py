@@ -77,6 +77,44 @@ def test_bundled_final_model_predicts_without_refitting():
     model_dir = Path(__file__).resolve().parents[1] / "models"
     original = load_assets(model_dir)
     assert original.indices.shape == (142,)
+    assert original.ad_domain is not None
     result = predict_smiles("CCO", original)
     assert np.isfinite(result["pic50"])
     assert result["ic50_um"] > 0
+    assert result["ad_inside"] in (True, False)
+    assert np.isfinite(result["leverage"])
+    assert 0 <= result["selected_tanimoto"] <= 1
+
+
+def test_every_example_screening_molecule_receives_actual_ad_values():
+    """Regression test for a UI table that previously exported None/Unavailable."""
+    from pathlib import Path
+    from panura_engine import load_assets
+    from panura_inputs import read_screening_file
+
+    root = Path(__file__).resolve().parents[1]
+    loaded = load_assets(root / "models")
+    example = root / "examples" / "PanURA_example.csv"
+    frame = read_screening_file(example.name, example.read_bytes())
+    assert len(frame) == 6
+    for smi in frame["SMILES"]:
+        result = predict_smiles(smi, loaded)
+        assert result["ad_inside"] in (True, False), smi
+        assert np.isfinite(result["leverage"]), smi
+        assert result["leverage"] >= 0, smi
+        assert result["ad_cutoff"] == pytest.approx(0.98752174387856, abs=1e-7)
+        assert result["selected_tanimoto"] is not None
+        assert 0 <= result["selected_tanimoto"] <= 1, smi
+
+
+def test_model_loading_fails_explicitly_if_ad_reference_is_missing(tmp_path):
+    """A missing reference must never silently yield successful incomplete output."""
+    import shutil
+    from pathlib import Path
+    from panura_engine import load_assets
+
+    model_dir = Path(__file__).resolve().parents[1] / "models"
+    for name in ("Final_Model.pkl.b64", "Feature_Selection_Manifest.json.b64"):
+        shutil.copyfile(model_dir / name, tmp_path / name)
+    with pytest.raises(FileNotFoundError, match="applicability-domain"):
+        load_assets(tmp_path)

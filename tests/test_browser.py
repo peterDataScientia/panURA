@@ -129,9 +129,19 @@ def test_mobile_view_not_cramped(page, app_url, width, height):
     expect(page.get_by_text("Molecular editor")).to_be_visible(timeout=30000)
     iframe = page.locator("iframe").first
     expect(iframe).to_be_visible(timeout=30000)
-    # Frame dimensions must be bounded by the user's actual screen.
-    bounds = iframe.bounding_box()
-    assert bounds is not None
+    # Streamlit can briefly replace the JSME iframe while sizing the mobile canvas.
+    # Poll for a mounted, measurable frame instead of reading during replacement.
+    bounds = page.wait_for_function(
+        """() => {
+            const f = document.querySelector('iframe');
+            if (!f || !f.isConnected) return false;
+            const r = f.getBoundingClientRect();
+            return r.width > 0 && r.height > 0
+                ? {x: r.x, y: r.y, width: r.width, height: r.height}
+                : false;
+        }""",
+        timeout=15000,
+    ).json_value()
     assert bounds["x"] >= 0
     assert bounds["x"] + bounds["width"] <= width + 2
     assert bounds["width"] >= max(220, width - 65), bounds
@@ -219,6 +229,9 @@ def test_batch_csv_ids_remain_in_prediction_export(page, app_url):
     assert list(records[0])[:2] == ["ID", "SMILES"]
     assert [r["ID"] for r in records] == [f"URA_{i:03d}" for i in range(1, 7)]
     assert all(r["pIC50_pred"] for r in records)
+    assert all(r["AD_status"] in {"Inside", "Outside"} for r in records)
+    assert all(r["leverage"] not in {"", "None", "nan"} for r in records)
+    assert all(r["selected_bit_tanimoto"] not in {"", "None", "nan"} for r in records)
     assert "max_tanimoto" not in records[0], "Do not export an empty similarity column"
 
 
