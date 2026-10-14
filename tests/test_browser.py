@@ -249,6 +249,7 @@ def test_paste_smiles_predict_save_and_restore_design(page, app_url):
     box.press("Enter")
     expect(page.get_by_text("Predicted pIC₅₀", exact=True)).to_be_visible(timeout=30000)
     expect(page.get_by_text("Training-space AD", exact=True)).to_be_visible(timeout=30000)
+    expect(page.get_by_text("4.954", exact=True)).to_be_visible(timeout=30000)
     page.get_by_role("button", name="Save current design").click()
     expect(page.get_by_role("combobox", name="Restore a saved molecular structure")).to_be_visible(timeout=15000)
     box.fill("CCO")
