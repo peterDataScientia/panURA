@@ -300,6 +300,12 @@ if page == "Molecular Prediction":
             )
 
 elif page == "Batch Screening":
+    if assets is not None and assets.ad_domain is not None:
+        st.caption(
+            f"Applicability domain loaded · training compounds: "
+            f"{len(assets.ad_domain.selected_training)} · "
+            f"empirical leverage P95: {assets.ad_domain.cutoff_p95:.3f}"
+        )
     # Tiny sample files show both accepted formats without occupying vertical space.
     sample_csv, sample_txt = st.columns(2, gap="small")
     with sample_csv:
