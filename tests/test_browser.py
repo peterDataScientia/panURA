@@ -219,6 +219,9 @@ def test_batch_csv_ids_remain_in_prediction_export(page, app_url):
     assert list(records[0])[:2] == ["ID", "SMILES"]
     assert [r["ID"] for r in records] == [f"URA_{i:03d}" for i in range(1, 7)]
     assert all(r["pIC50_pred"] for r in records)
+    assert all(r["AD_status"] in {"Inside", "Outside"} for r in records)
+    assert all(r["leverage"] not in {"", "None", "nan"} for r in records)
+    assert all(r["selected_bit_tanimoto"] not in {"", "None", "nan"} for r in records)
     assert "max_tanimoto" not in records[0], "Do not export an empty similarity column"
 
 
