@@ -245,7 +245,7 @@ if page == "Molecular Prediction":
             "Leverage": round(actual["leverage"], 5)
                         if actual.get("leverage") is not None else None,
         })
-        st.session_state["panura_design_notice"] = "Design saved."
+        st.session_state["panura_design_notice"] = f"Saved {records[-1]['Design']}: {canonical}"
 
     st.button("Save current design", disabled=result is None,
               key="panura_save_design", on_click=save_current_design)
