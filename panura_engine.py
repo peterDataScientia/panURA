@@ -12,6 +12,7 @@ import joblib
 import numpy as np
 from rdkit import Chem
 from skfp.fingerprints import PubChemFingerprint
+from panura_ad import LeverageDomain, load_leverage_domain, assess_leverage, max_selected_tanimoto
 
 PUBCHEM_BITS = 881
 SELECTED_BITS = 142
@@ -23,6 +24,7 @@ class PredictorAssets:
     indices: np.ndarray
     fingerprints: PubChemFingerprint
     training_fingerprints: np.ndarray | None = None
+    ad_domain: LeverageDomain | None = None
 
 
 def parse_smiles(value: object):
@@ -60,7 +62,9 @@ def load_assets(model_dir: Path) -> PredictorAssets:
         if training.ndim != 2 or training.shape[1] != PUBCHEM_BITS:
             raise ValueError("Training fingerprints must have 881 columns.")
         training = np.asarray(training, dtype=bool)
-    return PredictorAssets(model, indices, PubChemFingerprint(), training)
+    ad_path = model_dir / "ad_reference.json"
+    ad = load_leverage_domain(ad_path, names) if ad_path.exists() else None
+    return PredictorAssets(model, indices, PubChemFingerprint(), training, ad)
 
 
 def predict_smiles(value: str, assets: PredictorAssets) -> dict[str, float | None]:
@@ -85,4 +89,12 @@ def predict_smiles(value: str, assets: PredictorAssets) -> dict[str, float | Non
             where=union != 0,
         )
         similarity = float(np.max(similarities))
-    return {"pic50": pic50, "ic50_um": 10 ** (6 - pic50), "max_tanimoto": similarity}
+    ad_result = assess_leverage(selected[0], assets.ad_domain) if assets.ad_domain is not None else {}
+    selected_similarity = max_selected_tanimoto(selected[0], assets.ad_domain) if assets.ad_domain is not None else None
+    return {
+        "pic50": pic50, "ic50_um": 10 ** (6 - pic50), "max_tanimoto": similarity,
+        "selected_tanimoto": selected_similarity,
+        "leverage": ad_result.get("leverage"),
+        "ad_cutoff": ad_result.get("ad_cutoff"),
+        "ad_inside": ad_result.get("ad_inside"),
+    }
