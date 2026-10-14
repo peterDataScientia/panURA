@@ -324,6 +324,9 @@ elif page == "Batch Screening":
                                 "pIC50_pred": result["pic50"],
                                 "IC50_uM_pred": result["ic50_um"],
                                 "status": "OK",
+                                "AD_status": ("Inside" if result["ad_inside"] else "Outside") if result.get("ad_inside") is not None else "Unavailable",
+                                "leverage": result.get("leverage"),
+                                "selected_bit_tanimoto": result.get("selected_tanimoto"),
                             }
                             if similarity_available:
                                 record["max_tanimoto"] = result["max_tanimoto"]
@@ -333,6 +336,9 @@ elif page == "Batch Screening":
                                 "pIC50_pred": float("nan"),
                                 "IC50_uM_pred": float("nan"),
                                 "status": str(exc),
+                                "AD_status": "Unavailable",
+                                "leverage": float("nan"),
+                                "selected_bit_tanimoto": float("nan"),
                             }
                             if similarity_available:
                                 record["max_tanimoto"] = float("nan")
