@@ -84,6 +84,8 @@ if page == "Molecular Prediction":
         st.session_state["panura_manual_smiles"] = st.session_state.pop("panura_pending_smiles_sync")
 
     def load_structure_into_editor(value: str):
+        # A user-requested paste/restore supersedes any stale JSME sync event.
+        st.session_state.pop("panura_pending_smiles_sync", None)
         smi = value.strip()
         st.session_state["panura_editor_seed"] = smi
         st.session_state["panura_active_smiles"] = smi
