@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+from rdkit import Chem
 from rdkit.Chem import Descriptors
 
 from panura_engine import load_assets, parse_smiles, predict_smiles
@@ -67,54 +68,83 @@ except Exception as exc:
     st.error("Unable to start the prediction engine: " + engine_error)
 
 if page == "Molecular Prediction":
-    editor_col, results_col = st.columns([1.18, 1], gap="large", vertical_alignment="top")
+    # One synchronized workspace: paste SMILES, draw/edit, and predict live.
+    # A new editor generation is used only when the user deliberately loads a
+    # different molecule. Ordinary drawing callbacks never remount the editor.
+    for key, default in (
+        ("panura_editor_seed", ""), ("panura_active_smiles", ""),
+        ("panura_manual_smiles", ""), ("panura_editor_generation", 0),
+        ("panura_editor_initialized", False), ("panura_editor_last_emitted", ""),
+        ("panura_design_history", []),
+    ):
+        if key not in st.session_state:
+            st.session_state[key] = default
 
+    if "panura_pending_smiles_sync" in st.session_state:
+        st.session_state["panura_manual_smiles"] = st.session_state.pop("panura_pending_smiles_sync")
+
+    def load_structure_into_editor(value: str):
+        smi = value.strip()
+        st.session_state["panura_editor_seed"] = smi
+        st.session_state["panura_active_smiles"] = smi
+        st.session_state["panura_manual_smiles"] = smi
+        st.session_state["panura_editor_last_emitted"] = smi
+        st.session_state["panura_editor_initialized"] = False
+        st.session_state["panura_editor_generation"] += 1
+
+    def accept_pasted_smiles():
+        smi = st.session_state["panura_manual_smiles"].strip()
+        if not smi or parse_smiles(smi) is not None:
+            load_structure_into_editor(smi)
+
+    editor_col, results_col = st.columns([1.18, 1], gap="large", vertical_alignment="top")
     with editor_col:
         with st.container(key="panura_editor_column"):
-            section("01", "Molecular editor", "LIVE INPUT")
-            input_mode = st.segmented_control(
-                "Molecule input",
-                options=["Draw molecule", "Enter SMILES"],
-                default="Draw molecule",
-                key="panura_input_mode",
+            section("01", "Molecular design workspace", "LIVE EDITING")
+            st.text_input(
+                "Paste SMILES to display and edit its molecular structure",
+                key="panura_manual_smiles",
+                placeholder="Paste an existing structure, or draw a new molecule below",
+                on_change=accept_pasted_smiles,
             )
-
-            # Keep the JSME initialization seed stable during drawing callbacks.
-            previous_mode = st.session_state.get("panura_previous_input_mode")
-            if previous_mode != input_mode and input_mode == "Draw molecule":
-                st.session_state["panura_editor_seed"] = st.session_state.get("panura_last_valid_smiles", "")
-                st.session_state["panura_editor_generation"] = st.session_state.get("panura_editor_generation", 0) + 1
-            st.session_state["panura_previous_input_mode"] = input_mode
-
-            smiles = ""
-            if input_mode == "Enter SMILES":
-                smiles = st.text_input(
-                    "SMILES",
-                    value=st.session_state.get("panura_last_valid_smiles", ""),
-                    placeholder="Enter a valid canonical or isomeric SMILES",
-                    key="panura_manual_input",
-                ).strip()
-            else:
-                try:
-                    from StreamJSME import StreamJSME
-                    width = available_editor_width()
-                    editor_height = max(360, min(470, round(width * 1.05)))
-                    draw_value = StreamJSME(
-                        smiles=st.session_state.get("panura_editor_seed", ""),
-                        width=width, height=editor_height, margin=0,
-                        key=f'panura_live_editor_{st.session_state.get("panura_editor_generation", 0)}',
+            if st.session_state["panura_manual_smiles"] and parse_smiles(st.session_state["panura_manual_smiles"]) is None:
+                st.warning("The SMILES is incomplete or invalid; the previous valid structure is retained.")
+            try:
+                from StreamJSME import StreamJSME
+                width = available_editor_width()
+                editor_height = max(360, min(470, round(width * 1.05)))
+                draw_value = StreamJSME(
+                    smiles=st.session_state["panura_editor_seed"],
+                    width=width, height=editor_height, margin=0,
+                    key=f'panura_design_editor_{st.session_state["panura_editor_generation"]}',
+                )
+                if isinstance(draw_value, str):
+                    drawn = draw_value.strip()
+                    # Some JSME builds return an empty value before a seeded
+                    # canvas has initialized. Do not erase the pasted molecule.
+                    initial_empty = bool(
+                        not drawn and st.session_state["panura_editor_seed"]
+                        and not st.session_state["panura_editor_initialized"]
                     )
-                    smiles = draw_value.strip() if isinstance(draw_value, str) else ""
-                except (ImportError, OSError) as exc:
-                    st.error(f"Sketcher could not load: {exc}")
-                    smiles = st.text_input("SMILES", key="panura_editor_fallback").strip()
-
+                    if not initial_empty:
+                        st.session_state["panura_editor_initialized"] = True
+                        if drawn != st.session_state["panura_editor_last_emitted"]:
+                            st.session_state["panura_editor_last_emitted"] = drawn
+                            st.session_state["panura_active_smiles"] = drawn
+                            if drawn != st.session_state["panura_manual_smiles"]:
+                                st.session_state["panura_pending_smiles_sync"] = drawn
+                                st.rerun()
+            except (ImportError, OSError) as exc:
+                st.warning(f"Interactive editor unavailable: {exc}")
+            if st.button("Clear structure", key="panura_clear_structure"):
+                load_structure_into_editor("")
+                st.rerun()
+            smiles = st.session_state["panura_active_smiles"]
             mol = parse_smiles(smiles)
-            if mol is not None:
-                st.session_state["panura_last_valid_smiles"] = smiles
-            elif smiles:
+            if smiles and mol is None:
                 st.caption("Complete the molecular structure to calculate activity.")
 
+    result = None
     with results_col:
         section("02", "Prediction console", "AUTO UPDATE")
         st.markdown(
@@ -125,7 +155,7 @@ if page == "Molecular Prediction":
             st.markdown(
                 '<div class="panura-empty"><span class="symbol">⌬</span>'
                 '<strong>Ready for a molecule</strong>'
-                '<p>Draw a structure or enter SMILES. Predictions update without an Apply or Predict button.</p></div>',
+                '<p>Paste SMILES or draw a structure. Predictions update after every valid change.</p></div>',
                 unsafe_allow_html=True,
             )
         elif assets is not None:
@@ -135,31 +165,94 @@ if page == "Molecular Prediction":
                     c1, c2 = st.columns(2, gap="small")
                     c1.metric("Predicted pIC₅₀", f'{result["pic50"]:.3f}')
                     c2.metric("Estimated IC₅₀", f'{result["ic50_um"]:.3g} µM')
-                    if result["max_tanimoto"] is not None:
-                        st.metric("Max. training-set Tanimoto", f'{result["max_tanimoto"]:.3f}')
+                    if result.get("ad_inside") is not None:
+                        status = "Inside" if result["ad_inside"] else "Outside"
+                        a, b = st.columns(2)
+                        a.metric("Training-space AD", status)
+                        b.metric("Leverage", f'{result["leverage"]:.3f}')
+                        st.caption(
+                            f'Leverage P95 cutoff: {result["ad_cutoff"]:.3f}. '
+                            'Prospective structural domain only; no experimental residual is assumed.'
+                        )
+                        if not result["ad_inside"]:
+                            st.warning(
+                                "Outside the training leverage domain. Treat potency estimates "
+                                "as exploratory and prioritize experimental verification."
+                            )
+                        if result.get("selected_tanimoto") is not None:
+                            st.caption(
+                                f'Maximum Tanimoto on 142 selected fingerprints: '
+                                f'{result["selected_tanimoto"]:.3f} (supplementary similarity, not AD).'
+                            )
+                    else:
+                        st.caption("Training-space applicability domain is unavailable.")
+                    if result.get("max_tanimoto") is not None:
+                        st.caption(f'Maximum 881-bit training Tanimoto: {result["max_tanimoto"]:.3f}')
             except Exception as exc:
                 st.error(f"Prediction error: {exc}")
 
-    # Keep the live output directly after the mobile editor.
-    # Secondary descriptors and duplicate 2D preview are collapsed by default,
-    # so phone users do not scroll past them to reach pIC50 and IC50.
     if mol is not None:
         with st.container(key="panura_structure_details"):
             with st.expander("Molecular properties and 2D structure", expanded=False):
-                with st.container(key="panura_descriptor_metrics"):
-                    m1, m2, m3 = st.columns(3, gap="small")
-                    m1.metric("Molecular weight", f"{Descriptors.MolWt(mol):.1f}")
-                    m2.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
-                    m3.metric("H-bond donors", f"{Descriptors.NumHDonors(mol)}")
+                m1, m2, m3 = st.columns(3, gap="small")
+                m1.metric("Molecular weight", f"{Descriptors.MolWt(mol):.1f}")
+                m2.metric("cLogP", f"{Descriptors.MolLogP(mol):.2f}")
+                m3.metric("H-bond donors", f"{Descriptors.NumHDonors(mol)}")
                 try:
                     from rdkit.Chem import Draw
-                    st.image(
-                        Draw.MolToImage(mol, size=(620, 360)),
-                        caption="2D molecular structure",
-                        use_container_width=True,
-                    )
+                    st.image(Draw.MolToImage(mol, size=(620, 360)),
+                             caption="2D molecular structure", use_container_width=True)
                 except (ImportError, OSError, RuntimeError):
                     st.caption("2D structure preview unavailable.")
+
+    st.divider()
+    section("03", "Design history and comparison", "SAVE VARIANTS")
+    st.caption(
+        "Modify the drawing, observe updated predictions, and save candidates for comparison. "
+        "Predicted improvements are hypotheses, not confirmed experimental optimization."
+    )
+    history = st.session_state["panura_design_history"]
+    if st.button("Save current design", disabled=result is None, key="panura_save_design"):
+        canonical = Chem.MolToSmiles(mol, isomericSmiles=True)
+        if any(item["Canonical_SMILES"] == canonical for item in history):
+            st.info("This chemical structure has already been saved.")
+        else:
+            history.append({
+                "Design": f"Design {len(history) + 1}",
+                "SMILES": smiles,
+                "Canonical_SMILES": canonical,
+                "Predicted_pIC50": round(result["pic50"], 4),
+                "Estimated_IC50_uM": round(result["ic50_um"], 5),
+                "AD": ("Inside" if result["ad_inside"] else "Outside")
+                      if result.get("ad_inside") is not None else "Unavailable",
+                "Leverage": round(result["leverage"], 5)
+                            if result.get("leverage") is not None else None,
+            })
+            st.success("Design saved. The first saved design is the comparison reference.")
+    if history:
+        base = history[0]["Predicted_pIC50"]
+        comparison = pd.DataFrame(history)
+        comparison["Delta_pIC50_vs_first"] = (
+            comparison["Predicted_pIC50"] - base
+        ).round(4)
+        st.dataframe(
+            comparison.drop(columns=["Canonical_SMILES"]),
+            use_container_width=True, hide_index=True,
+        )
+        labels = [f'{item["Design"]} · {item["Predicted_pIC50"]:.3f}' for item in history]
+        selected_design = st.selectbox("Restore a saved molecular structure", labels, key="panura_restore_choice")
+        r1, r2 = st.columns(2)
+        with r1:
+            if st.button("Load selected design into editor", key="panura_restore_design"):
+                load_structure_into_editor(history[labels.index(selected_design)]["SMILES"])
+                st.rerun()
+        with r2:
+            st.download_button(
+                "Download design comparison (.csv)",
+                comparison.to_csv(index=False).encode("utf-8"),
+                file_name="PanURA_design_comparison.csv", mime="text/csv",
+                key="panura_design_export",
+            )
 
 elif page == "Batch Screening":
     # Tiny sample files show both accepted formats without occupying vertical space.
