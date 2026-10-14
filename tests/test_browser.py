@@ -266,4 +266,5 @@ def test_paste_smiles_predict_save_and_restore_design(page, app_url):
     content = download_event.value.path().read_text(encoding="utf-8")
     assert "Design 1" in content and "Design 2" in content
     page.get_by_role("button", name="Load selected design into editor").click()
-    expect(box).to_have_value("CC(N)=O", timeout=15000)
+    import re
+    expect(box).to_have_value(re.compile(r"^CC(?:\\(=O\\)N|\\(N\\)=O)$"), timeout=15000)
