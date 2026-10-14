@@ -241,9 +241,9 @@ if page == "Molecular Prediction":
         selected_design = st.selectbox("Restore a saved molecular structure", labels, key="panura_restore_choice")
         r1, r2 = st.columns(2)
         with r1:
-            if st.button("Load selected design into editor", key="panura_restore_design"):
-                load_structure_into_editor(history[labels.index(selected_design)]["SMILES"])
-                st.rerun()
+            st.button("Load selected design into editor", key="panura_restore_design",
+                      on_click=load_structure_into_editor,
+                      args=(history[labels.index(selected_design)]["SMILES"],))
         with r2:
             st.download_button(
                 "Download design comparison (.csv)",
