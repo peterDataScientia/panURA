@@ -254,6 +254,9 @@ def test_paste_smiles_predict_save_and_restore_design(page, app_url):
     expect(page.get_by_role("combobox", name="Restore a saved molecular structure")).to_be_visible(timeout=15000)
     box.fill("CCO")
     box.press("Enter")
+    # Wait for the second molecule to reach the live prediction console.
+    metric = page.locator('[data-testid="stMetric"]').filter(has_text="Predicted pIC₅₀")
+    expect(metric).not_to_contain_text("4.954", timeout=30000)
     page.get_by_role("button", name="Save current design").click()
     with page.expect_download() as download_event:
         page.get_by_role("button", name="Download design comparison (.csv)").click()
