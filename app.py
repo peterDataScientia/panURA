@@ -313,7 +313,7 @@ elif page == "Batch Screening":
                 )
                 # Schema-version token invalidates old results with an empty
                 # max_tanimoto column after an application upgrade.
-                current_id = (source_id, selected, similarity_available, "activity-v2")
+                current_id = (source_id, selected, similarity_available, "activity-v3-ad")
                 if st.button("Run Screening", type="primary", disabled=assets is None):
                     rows = []
                     progress = st.progress(0)
