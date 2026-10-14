@@ -29,15 +29,36 @@ st.markdown(
 )
 
 
+def model_assets_revision() -> str:
+    """Invalidate both model and prediction caches whenever deployed assets change."""
+    digest = hashlib.sha256()
+    for name in (
+        "Final_Model.pkl.b64",
+        "Feature_Selection_Manifest.json.b64",
+        "ad_reference.json",
+    ):
+        path = MODELS / name
+        digest.update(name.encode("utf-8"))
+        if path.is_file():
+            digest.update(path.read_bytes())
+        else:
+            digest.update(b"MISSING")
+    return digest.hexdigest()
+
+
+ASSETS_REVISION = model_assets_revision()
+
+
 @st.cache_resource(show_spinner=False)
-def predictor_assets():
+def predictor_assets(assets_revision: str):
+    # The revision participates in Streamlit's cache key.
     return load_assets(MODELS)
 
 
 @st.cache_data(show_spinner=False, max_entries=750)
-def cached_prediction(smiles: str):
-    # Cache repeated drawings without changing the original trained model.
-    return predict_smiles(smiles, predictor_assets())
+def cached_prediction(smiles: str, assets_revision: str):
+    # Cached predictions cannot outlive the model/manifest/AD artifacts.
+    return predict_smiles(smiles, predictor_assets(assets_revision))
 
 
 def intro(section: str, title: str, subtitle: str):
@@ -61,7 +82,7 @@ st.markdown('<div class="panura-topline"></div>', unsafe_allow_html=True)
 page = render_navigation(ROOT / "assets" / "panura-logo.svg")
 
 try:
-    assets = predictor_assets()
+    assets = predictor_assets(ASSETS_REVISION)
     engine_error = None
 except Exception as exc:
     assets, engine_error = None, str(exc)
@@ -168,7 +189,7 @@ if page == "Molecular Prediction":
             )
         elif assets is not None:
             try:
-                result = cached_prediction(smiles)
+                result = cached_prediction(smiles, ASSETS_REVISION)
                 with st.container(key="panura_prediction_metrics"):
                     c1, c2 = st.columns(2, gap="small")
                     c1.metric("Predicted pIC₅₀", f'{result["pic50"]:.3f}')
@@ -230,7 +251,7 @@ if page == "Molecular Prediction":
         if current_mol is None or assets is None:
             st.session_state["panura_design_notice"] = "No valid molecule to save."
             return
-        actual = cached_prediction(current)
+        actual = cached_prediction(current, ASSETS_REVISION)
         canonical = Chem.MolToSmiles(current_mol, isomericSmiles=True)
         records = st.session_state["panura_design_history"]
         if any(item["Canonical_SMILES"] == canonical for item in records):
@@ -337,13 +358,13 @@ elif page == "Batch Screening":
                 )
                 # Schema-version token invalidates old results with an empty
                 # max_tanimoto column after an application upgrade.
-                current_id = (source_id, selected, similarity_available, "activity-v3-ad")
+                current_id = (source_id, selected, similarity_available, ASSETS_REVISION, "activity-v4-ad")
                 if st.button("Run Screening", type="primary", disabled=assets is None):
                     rows = []
                     progress = st.progress(0)
                     for i, smi in enumerate(df[selected]):
                         try:
-                            result = cached_prediction(str(smi))
+                            result = cached_prediction(str(smi), ASSETS_REVISION)
                             record = {
                                 "pIC50_pred": result["pic50"],
                                 "IC50_uM_pred": result["ic50_um"],
