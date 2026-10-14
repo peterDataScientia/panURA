@@ -237,3 +237,23 @@ def test_small_batch_shows_molecule_chart_not_fixed_25_bin_histogram(page, app_u
         "(el) => el.data.map((t, i) => ({type: t.type, count: el.calcdata[i].length}))"
     )
     assert trace_info == [{"type": "scatter", "count": 6}], trace_info
+
+
+def test_paste_smiles_predict_save_and_restore_design(page, app_url):
+    """A pasted structure must support prediction and a persistent design snapshot."""
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(app_url)
+    box = page.get_by_role("textbox", name="Paste SMILES to display and edit its molecular structure")
+    expect(box).to_be_visible(timeout=30000)
+    box.fill("CC(=O)N")
+    box.press("Enter")
+    expect(page.get_by_text("Predicted pIC₅₀", exact=True)).to_be_visible(timeout=30000)
+    expect(page.get_by_text("Training-space AD", exact=True)).to_be_visible(timeout=30000)
+    page.get_by_role("button", name="Save current design").click()
+    expect(page.get_by_text("Design 1", exact=True)).to_be_visible(timeout=15000)
+    box.fill("CCO")
+    box.press("Enter")
+    page.get_by_role("button", name="Save current design").click()
+    expect(page.get_by_text("Design 2", exact=True)).to_be_visible(timeout=15000)
+    page.get_by_role("button", name="Load selected design into editor").click()
+    expect(box).to_have_value("CC(=O)N", timeout=15000)
